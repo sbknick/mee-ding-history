@@ -1,0 +1,18 @@
+{
+    "name": "mee-ding-history-bot",
+    "version": "1.0.0",
+    "description": "A bot to help MEE remember what people said when they dinged.",
+    "main": "dist/src/bot.js",
+    "author": "Blair Knickerbocker",
+    "scripts": {
+        "build": "tsc",
+        "start": "tsc && node dist/src/bot.js"
+    },
+    "dependencies": {
+        "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
+        "winston": "^3.2.1"
+    },
+    "devDependencies": {
+        "@types/node": "^13.7.4"
+    }
+}
