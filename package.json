@@ -6,7 +6,7 @@
     "author": "Blair Knickerbocker",
     "scripts": {
         "build": "tsc",
-        "start": "tsc && node dist/src/app.js"
+        "start": "node dist/src/app.js"
     },
     "dependencies": {
         "discord.io": "https://github.com/woor/discord.io/tarball/gateway_v6",
