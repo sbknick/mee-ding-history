@@ -1,31 +1,28 @@
 import Discord from "discord.io";
-import * as logger from "winston";
+import logger from "winston";
 
-import auth from "../auth.json";
+class Bot {
+    constructor(
+        private bot: Discord.Client
+    ) {
+        this.bot.on("ready", evt => {
+            logger.info("Connected");
+            logger.info("Logged in as: ");
+            logger.info(this.bot.username + " - (" + this.bot.id + ")");
+        });
+    }
 
-import MessageRouter from "./messageRouter";
+    public reply = (msg: message, response: string) =>
+        this.bot.sendMessage({
+            to: msg.channelID,
+            message: response
+        });
 
+    public dm = (msg: message, response: string) =>
+        this.bot.sendMessage({
+            to: msg.userID,
+            message: response
+        });
+}
 
-// Configure logger settings
-
-logger.remove(logger.transports.Console);
-logger.createLogger({
-    level: 'debug',
-}).add(new logger.transports.Console());
-
-
-// Initialize Discord Bot
-
-var bot = new Discord.Client({
-   token: auth.token,
-   autorun: true
-});
-
-bot.on("ready", evt => {
-    logger.info("Connected");
-    logger.info("Logged in as: ");
-    logger.info(bot.username + " - (" + bot.id + ")");
-});
-
-var messageRouter = new MessageRouter(bot);
-bot.on("message", messageRouter.route);
+export default Bot;
