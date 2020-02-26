@@ -18,17 +18,11 @@ logger.createLogger({
 // Initialize Discord Bot
 
 var discordClient = new Discord.Client({
-   token: auth.token,
+   token: process.env.DISCORD_TOKEN || auth.token,
    autorun: true
 });
 
 var bot = new Bot(discordClient);
-
-discordClient.on("ready", evt => {
-    logger.info("Connected");
-    logger.info("Logged in as: ");
-    logger.info(discordClient.username + " - (" + discordClient.id + ")");
-});
 
 var messageRouter = new MessageRouter(bot);
 discordClient.on("message", messageRouter.route);
