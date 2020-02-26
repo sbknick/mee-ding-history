@@ -4,7 +4,7 @@ import * as logger from "winston";
 import auth from "../auth.json";
 
 import MessageRouter from "./MessageRouter";
-import Bot from "./Bot.js";
+import Bot from "./Bot";
 
 
 // Configure logger settings

@@ -1,5 +1,3 @@
-import Discord from "discord.io";
-
 import HelpHandler from "./MessageHandlers/HelpHandler";
 import Bot from "./Bot";
 
