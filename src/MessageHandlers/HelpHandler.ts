@@ -11,7 +11,7 @@ class HelpHandler implements IHandler {
         private bot: Bot
     ) {}
 
-    handle: messageCallback;
+    handle: msgCallback = m => {};
 
     public help(msg: message) {
 

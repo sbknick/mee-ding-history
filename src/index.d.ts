@@ -7,6 +7,7 @@ declare type message = {
 }
 
 declare type messageCallback = (user: string, userID: string, channelID: string, message: string, event: WebSocketEvent) => void;
+declare type msgCallback = (msg: message) => void;
 
 declare type WebSocketEvent = {
     d: any;

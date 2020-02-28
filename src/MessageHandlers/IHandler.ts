@@ -1,4 +1,4 @@
 
 export default interface IHandler {
-    handle: messageCallback;
+    handle: msgCallback;
 }

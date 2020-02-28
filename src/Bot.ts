@@ -23,6 +23,17 @@ class Bot {
             to: msg.userID,
             message: response
         });
+
+    public retrieveMessage: (messageID: string) => string = () => {
+        return "##ALARM BELLS##";
+        // this.bot.getMessage({
+        //     messageID
+        // }, {
+
+        // });
+    }
+
+    public userID = () => this.bot.id;
 }
 
 export default Bot;
