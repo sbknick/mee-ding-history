@@ -1,39 +1,35 @@
-import Discord from "discord.io";
+import Discord from "discord.js";
 import logger from "winston";
 
-class Bot {
+import { Message } from "./Models/Message";
+import { Memory } from "./Models/Memory";
+
+
+export class Bot {
     constructor(
-        private bot: Discord.Client
+        private client: Discord.Client
     ) {
-        this.bot.on("ready", evt => {
+        this.client.on("ready", () => {
             logger.info("Connected");
             logger.info("Logged in as: ");
-            logger.info(this.bot.username + " - (" + this.bot.id + ")");
+            logger.info(this.client.user.username + " - (" + this.client.user.id + ")");
         });
     }
 
-    public reply = (msg: message, response: string) =>
-        this.bot.sendMessage({
-            to: msg.channelID,
-            message: response
-        });
-
-    public dm = (msg: message, response: string) =>
-        this.bot.sendMessage({
-            to: msg.userID,
-            message: response
-        });
-
-    public retrieveMessage: (messageID: string) => string = () => {
-        return "##ALARM BELLS##";
-        // this.bot.getMessage({
-        //     messageID
-        // }, {
-
-        // });
+    public reply = (msg: Message, response: string) => {
+        msg.source.reply(response);
     }
 
-    public userID = () => this.bot.id;
+    public dm = (msg: Message, response: string) => {
+        msg.source.author.send(response);
+    }
+
+    public retrieveMessage: (memory: Memory) => string = memory => {
+        const ch = <Discord.TextChannel>this.client.channels.get(memory.channelID);
+        const msg = ch.messages.get(memory.messageID);
+
+        return msg.content;
+    }
+
+    public userID = () => this.client.user.id;
 }
-
-export default Bot;

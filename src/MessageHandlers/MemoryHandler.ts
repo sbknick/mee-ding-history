@@ -1,37 +1,26 @@
 import IHandler from "./IHandler";
-import Bot from "../Bot";
+import { Bot } from "../Bot";
+import { Convert } from "../Convert";
+import { Memory } from "../Models/Memory";
+import { MessageHandler } from "../Models/Message";
 
-interface memory {
-    userID: string,
-    channelID: string,
-    messageID: string
-}
 
 class MemoryHandler implements IHandler {
     // key: userID
-    private lastMessageMap: Map<string, memory> = new Map<string, memory>();
+    private lastMessageMap: Map<string, Memory> = new Map<string, Memory>();
 
     public constructor (
         private bot: Bot
     ) {}
 
-    public handle: msgCallback = msg => {
-        const { user, userID, channelID, message, event } = msg;
-
-        this.lastMessageMap.set(userID, {
-            userID, channelID, messageID: event.d.id
-        });
-        // this.bot.reply(msg, `user: ${user} userID: ${userID} channelID: ${channelID} message: ${message}`);
+    public handle: MessageHandler = msg => {
+        this.lastMessageMap.set(msg.userID, Convert.ToMemory(msg));
     }
 
-    public repeat: msgCallback = msg => {
+    public repeat: MessageHandler = msg => {
         const m = this.lastMessageMap.get(msg.userID);
-        this.bot.retrieveMessage(m.messageID);
-        this.bot.reply(msg, `Your last message is\n> userID: ${m.userID} channelID: ${m.channelID} messageID: ${m.messageID}`);
-
-
-        // const { user, userID, channelID, message } = msg;
-        // this.bot.reply(msg, "I have no memory yet!");
+        const result = this.bot.retrieveMessage(m);
+        this.bot.reply(msg, `\n> ${result}`);
     }
 }
 

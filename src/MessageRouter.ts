@@ -1,11 +1,10 @@
-import logger from "winston";
-
+import { Bot } from "./Bot";
 import HelpHandler from "./MessageHandlers/HelpHandler";
 import MemoryHandler from "./MessageHandlers/MemoryHandler";
-import Bot from "./Bot";
+import { Message } from "./Models/Message";
 
-type routeDelegate = (msg: message) => void;
-type Router = { route: messageCallback };
+
+interface Router { route: (message: Message) => void };
 
 class MessageRouter implements Router {
     private helpHandler: HelpHandler;
@@ -18,13 +17,8 @@ class MessageRouter implements Router {
         this.memoryHandler = new MemoryHandler(bot);
     }
 
-    private XForm = (del: routeDelegate) => (user: string, userID: string, channelID: string, message: string, event: WebSocketEvent): void => {
-        del({user, userID, channelID, message, event});
-    }
-
-    private doRoute: (msg: message) => void = msg => {
+    public route = (msg: Message) => {
         if (msg.userID == this.bot.userID()) {
-            logger.info("Received my own message: ", msg);
             return;
         }
 
@@ -32,7 +26,7 @@ class MessageRouter implements Router {
             // Our bot needs to know if it will execute a command
             // It will listen for messages that will start with `!`
             if (msg.message.substring(0, 1) == '!') {
-                var args = msg.message.substring(1).split(' ');
+                var args = msg.message.slice(1).trim().split(/ +/g);
                 var cmd = args[0];
             
                 args = args.splice(1);
@@ -68,8 +62,6 @@ class MessageRouter implements Router {
             this.memoryHandler.handle(msg);
         }
     }
-
-    public route: messageCallback = this.XForm(this.doRoute);
 }
 
 export default MessageRouter;

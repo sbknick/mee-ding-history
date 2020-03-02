@@ -1,4 +1,6 @@
+import { MessageHandler } from "../Models/Message";
 
-export default interface IHandler {
-    handle: msgCallback;
+
+export default class IHandler {
+    handle: MessageHandler;
 }

@@ -1,5 +1,7 @@
 import IHandler from "./IHandler";
-import Bot from "../Bot";
+import { Bot } from "../Bot";
+import { Message } from "../Models/Message";
+
 
 class HelpHandler implements IHandler {
     private cmds = [
@@ -11,19 +13,13 @@ class HelpHandler implements IHandler {
         private bot: Bot
     ) {}
 
-    handle: msgCallback = m => {};
+    handle = () => {};
 
-    public help(msg: message) {
-
+    public help(msg: Message) {
         this.bot.dm(msg, "str");
-        // msg.dm()
     }
 
-    public unknownInput(msg: message) {
-        // this.bot.directMessages;
-        // this.bot.getMessage({
-        //     channelID, messageID
-        // })
+    public unknownInput(msg: Message) {
         let output: string[] = [
             "Unknown input: " + msg.message,
             "",
