@@ -1,9 +1,8 @@
-import IHandler from "./IHandler";
 import { Bot } from "../Bot";
 import { Message } from "../Models/Message";
 
 
-class HelpHandler implements IHandler {
+class HelpHandler {
     private cmds = [
         ["!ding help", "Shows this message"],
         ["!ding me", "!ding me <level> : This will quote the line that you dinged on for a particular level. If no level is supplied, it will assume your current level."],
@@ -12,8 +11,6 @@ class HelpHandler implements IHandler {
     public constructor (
         private bot: Bot
     ) {}
-
-    handle = () => {};
 
     public help(msg: Message) {
         this.bot.dm(msg, "str");

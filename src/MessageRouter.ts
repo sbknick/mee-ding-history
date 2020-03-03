@@ -18,7 +18,10 @@ class MessageRouter implements Router {
     }
 
     public route = (msg: Message) => {
-        if (msg.userID == this.bot.userID()) {
+        if (msg.source.author.bot) {
+            if (msg.userID == this.bot.mee6userID()) {
+                this.memoryHandler.commit(msg);
+            }
             return;
         }
 
@@ -53,13 +56,16 @@ class MessageRouter implements Router {
                             return this.bot.reply(msg, "I can't remember... Sorry!");
 
                         default:
-                            return this.helpHandler.unknownInput(msg);
+                            let search = this.bot.deepSearch(msg, "GG", "1");
+
+                            return;
+                            // return this.helpHandler.unknownInput(msg);
                     }
                 }
             }
         }
         finally {
-            this.memoryHandler.handle(msg);
+            this.memoryHandler.remember(msg);
         }
     }
 }
