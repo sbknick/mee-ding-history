@@ -4,7 +4,7 @@ import { Memory } from "../Models/Memory";
 import { MessageHandler } from "../Models/Message";
 
 
-class MemoryHandler {
+export class MemoryHandler {
     // key: userID
     private lastMessageMap: Map<string, Memory> = new Map<string, Memory>();
 
@@ -19,7 +19,7 @@ class MemoryHandler {
     public repeat: MessageHandler = msg => {
         const m = this.lastMessageMap.get(msg.userID);
         const result = this.bot.retrieveMessage(m);
-        this.bot.reply(`\n> ${result}`);
+        this.bot.reply(msg, `\n> ${result}`);
     }
 
     public commit: MessageHandler = msg => {
@@ -31,5 +31,3 @@ class MemoryHandler {
         
     }
 }
-
-export default MemoryHandler

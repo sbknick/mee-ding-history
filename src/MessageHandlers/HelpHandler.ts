@@ -1,19 +1,20 @@
-import { Bot } from "../Bot";
+import { BotContext } from "../Bot";
 import { Message } from "../Models/Message";
 
 
-class HelpHandler {
-    private cmds = [
+export class HelpHandler {
+    private static readonly CMDS = [
         ["!ding help", "Shows this message"],
         ["!ding me", "!ding me <level> : This will quote the line that you dinged on for a particular level. If no level is supplied, it will assume your current level."],
+        ["!ding me", "!ding user <level> : This will quote the line that you dinged on for a particular level. If no level is supplied, it will assume your current level."],
     ];
 
     public constructor (
-        private bot: Bot
+        private ctx: BotContext
     ) {}
 
     public help() {
-        this.bot.dm("help str");
+        this.ctx.dm("help str");
     }
 
     public unknownInput(msg: Message) {
@@ -25,7 +26,7 @@ class HelpHandler {
             ...this.listHelpCommands()
         ];
 
-        this.bot.dm(output.join("\n"));
+        this.ctx.dm(output.join("\n"));
     }
 
     public error(cmd: string) {
@@ -33,9 +34,7 @@ class HelpHandler {
     }
 
     private listHelpCommands(): string[] {
-        let lines = this.cmds.map(c => c[0].padEnd(20) + ": " + c[1]);
+        let lines = HelpHandler.CMDS.map(c => c[0].padEnd(20) + ": " + c[1]);
         return lines;
     }
 }
-
-export default HelpHandler;

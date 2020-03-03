@@ -1,5 +1,8 @@
+import Discord from "discord.js";
+
+
 export interface Memory {
-    userID: string,
-    channelID: string,
-    messageID: string
+    userID: Discord.Snowflake,
+    channelID: Discord.Snowflake,
+    messageID: Discord.Snowflake
 }

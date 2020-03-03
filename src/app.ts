@@ -3,7 +3,7 @@ import * as logger from "winston";
 
 import auth from "./auth.json";
 
-import MessageRouter from "./MessageRouter";
+import { MessageRouter } from "./MessageRouter";
 import { Bot } from "./Bot";
 import { Convert } from "./Convert";
 

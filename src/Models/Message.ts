@@ -2,9 +2,9 @@ import Discord from "discord.js";
 
 
 export interface Message {
-    userID: string,
-    channelID: string,
-    messageID: string,
+    userID: Discord.Snowflake,
+    channelID: Discord.Snowflake,
+    messageID: Discord.Snowflake,
     message: string,
     source: Discord.Message
 }
