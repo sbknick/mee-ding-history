@@ -27,9 +27,7 @@ export class Bot {
         });
     }
 
-    public getMsgContext = (msg: Message) => {
-        return new BotContext(msg, this).executor;
-    }
+    public getMsgContext = (msg: Message) => new BotContext(msg, this).executor;
 
     public userID = () => this.client.user.id;
     public mee6UserID = () => this.mee6.id;
