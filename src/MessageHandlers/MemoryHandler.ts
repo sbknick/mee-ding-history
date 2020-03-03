@@ -19,7 +19,7 @@ class MemoryHandler {
     public repeat: MessageHandler = msg => {
         const m = this.lastMessageMap.get(msg.userID);
         const result = this.bot.retrieveMessage(m);
-        this.bot.reply(msg, `\n> ${result}`);
+        this.bot.reply(`\n> ${result}`);
     }
 
     public commit: MessageHandler = msg => {

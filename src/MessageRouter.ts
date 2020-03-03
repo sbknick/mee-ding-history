@@ -17,7 +17,9 @@ class MessageRouter implements Router {
         this.memoryHandler = new MemoryHandler(bot);
     }
 
-    public route = (msg: Message) => {
+    public route = async (msg: Message) => {
+        this.bot.setMsgContext(msg);
+
         if (msg.source.author.bot) {
             if (msg.userID == this.bot.mee6userID()) {
                 this.memoryHandler.commit(msg);
@@ -36,7 +38,7 @@ class MessageRouter implements Router {
                 switch (cmd) {
                     // !ping
                 case "ping":
-                    this.bot.reply(msg, "Pong!");
+                    this.bot.reply("Pong!");
                     break;
 
                 case "repeat":
@@ -46,17 +48,19 @@ class MessageRouter implements Router {
                     // !ding
                 case "ding":
                     if (args.length == 0 || args[0] == "help")
-                        return this.helpHandler.help(msg);
+                        return this.helpHandler.help();
 
                     switch (args[0]) {
                         case "me":
-                            return this.bot.reply(msg, "I can't remember... Sorry!");
+                            let searchResult = await this.bot.deepSearch("GG", "1");
+
+                            return this.bot.reply(searchResult.content);
 
                         case "self":
-                            return this.bot.reply(msg, "I can't remember... Sorry!");
+                            return this.bot.reply("I can't remember... Sorry!");
 
                         default:
-                            let search = this.bot.deepSearch(msg, "GG", "1");
+                            let search = this.bot.deepSearch("GG", "1");
 
                             return;
                             // return this.helpHandler.unknownInput(msg);

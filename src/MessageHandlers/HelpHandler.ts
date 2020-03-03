@@ -12,8 +12,8 @@ class HelpHandler {
         private bot: Bot
     ) {}
 
-    public help(msg: Message) {
-        this.bot.dm(msg, "str");
+    public help() {
+        this.bot.dm("help str");
     }
 
     public unknownInput(msg: Message) {
@@ -25,7 +25,7 @@ class HelpHandler {
             ...this.listHelpCommands()
         ];
 
-        this.bot.dm(msg, output.join("\n"));
+        this.bot.dm(output.join("\n"));
     }
 
     public error(cmd: string) {
