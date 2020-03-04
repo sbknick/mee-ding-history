@@ -1,3 +1,4 @@
+import Discord from "discord.js";
 import logger from "winston";
 
 import { Bot } from "./Bot";
@@ -70,11 +71,20 @@ export class MessageRouter implements Router {
                                     logger.info("Received mention request:\n" + msg.message);
                                     msg.source.channel.startTyping();
 
-                                    let level = "2";
+                                    let level = "1";
                                     let searchResult = await ctx.deepSearch("GG", level).mention();
-                                    
+
                                     if (searchResult) {
-                                        ctx.reply(`at level ${level} <@${ctx.mentionUserID}> said:\n> ${searchResult.content}`);
+                                        let embed = new Discord.RichEmbed()
+                                            .setColor(0xe2f5ec)
+                                            .setAuthor(searchResult.guild.member(searchResult.author).nickname)
+                                            .setTitle(`Level ${level}`)
+                                            .setDescription(searchResult.content)
+                                            .addField('\u200b', `[Jump to...](${searchResult.url})`)
+                                            .setTimestamp(searchResult.createdTimestamp)
+                                            .setFooter(`Brought to you by Blair :)`);
+
+                                        ctx.respond(embed);
                                     }
                                     else {
                                         ctx.sorry();

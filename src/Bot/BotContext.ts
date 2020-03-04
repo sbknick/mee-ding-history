@@ -35,6 +35,7 @@ export class BotContext {
 
     readonly reply = (value: string) => this.bot.reply(this.msg, value);
     readonly dm = (value: string) => this.bot.dm(this.msg, value);
+    readonly respond = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });
     readonly sorry = () => this.bot.reply(this.msg, ` sorry, I can't find that. :(`);
 
     readonly deepSearch = (searchTerm: string, level: string) =>
