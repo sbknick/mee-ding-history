@@ -37,6 +37,6 @@ export class BotContext {
     readonly dm = (value: string) => this.bot.dm(this.msg, value);
     readonly sorry = () => this.bot.reply(this.msg, ` sorry, I can't find that. :(`);
 
-    readonly deepSearch = (...searchTerms: string[]) =>
-        new DeepSearch(this, this.msg.source.guild, searchTerms);
+    readonly deepSearch = (searchTerm: string, level: string) =>
+        new DeepSearch(this, this.msg.source.guild, searchTerm, level);
 }

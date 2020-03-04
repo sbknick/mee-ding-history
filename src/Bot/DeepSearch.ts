@@ -6,13 +6,15 @@ import { BotContext } from ".";
 
 export class DeepSearch {
     private static readonly pageSize = 100;
+    private static readonly numberRegex = /([\d])+/;
 
     private userID: Discord.Snowflake;
 
     constructor(
         private ctx: BotContext,
         private guild: Discord.Guild,
-        private searchTerms: string[]
+        private searchTerm: string,
+        private level: string
     ) {}
 
     me(): Promise<Discord.Message> {
@@ -77,7 +79,9 @@ export class DeepSearch {
     }
     
     private messageFilter = (msg: Discord.Message) =>
-        msg.author.id == this.ctx.mee6UserID && this.searchTerms.every(term => msg.cleanContent.indexOf(term) != -1);
+        msg.author.id == this.ctx.mee6UserID &&
+        msg.cleanContent.indexOf(this.searchTerm) != -1 &&
+        DeepSearch.numberRegex.exec(msg.cleanContent)[0] == this.level;
 
     private async fetchPreviousMessage(msg: Discord.Message) {
         let drilldownMessages = await msg.channel.fetchMessages({
