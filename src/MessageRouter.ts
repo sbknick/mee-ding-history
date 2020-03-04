@@ -1,3 +1,5 @@
+import logger from "winston";
+
 import { Bot } from "./Bot";
 import { MemoryHandler } from "./MessageHandlers/MemoryHandler";
 import { Message } from "./Models/Message";
@@ -46,6 +48,10 @@ export class MessageRouter implements Router {
                         if (args.length == 0 || args[0] == "help")
                             return ctx.helpHandler.help();
 
+                        if (!msg.source.guild) {
+                            return msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
+                        }
+
                         switch (args[0]) {
                             case "me":
                                 {
@@ -55,17 +61,26 @@ export class MessageRouter implements Router {
                                     return ctx.reply(`at level ${level} you said:\n> ${searchResult.content}`);
                                 }
 
-                            case "self":
-                                return ctx.reply("I can't remember... Sorry!");
-
                             case "user":
                                 {
                                     if (!ctx.mentionUserID) {
                                         return ctx.helpHandler.error(ctx.cmd)
                                     }
-                                    let level = "1";
+
+                                    logger.info("Received mention request:\n" + msg.message);
+                                    msg.source.channel.startTyping();
+
+                                    let level = "2";
                                     let searchResult = await ctx.deepSearch("GG", level).mention();
-                                    return ctx.reply(`at level ${level} <@${ctx.mentionUserID}> said:\n> ${searchResult.content}`);
+                                    
+                                    if (searchResult) {
+                                        ctx.reply(`at level ${level} <@${ctx.mentionUserID}> said:\n> ${searchResult.content}`);
+                                    }
+                                    else {
+                                        ctx.sorry();
+                                    }
+
+                                    return msg.source.channel.stopTyping();
                                 }
 
                             default:

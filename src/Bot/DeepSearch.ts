@@ -36,10 +36,12 @@ export class DeepSearch {
         const channels = this.getGuildTextChannels();
 
         for (const channel of channels) {
-            let before: string;
+            if (cancelled) break;
+            let before: string = undefined;
 
             while (!cancelled) {
                 const messages = await this.fetchMatchingMessages(channel, before);
+                if (messages.length == 0) break;
 
                 for (const message of messages) {
                     const prev = await this.fetchPreviousMessage(message);
@@ -52,6 +54,8 @@ export class DeepSearch {
                     cancelled = true;
                     break;
                 }
+
+                before = this.oldest(messages).id;
             }
         }
 
@@ -73,7 +77,7 @@ export class DeepSearch {
     }
     
     private messageFilter = (msg: Discord.Message) =>
-        msg.author.id == this.ctx.mee6UserID && this.searchTerms.every(term => msg.content.indexOf(term) != -1);
+        msg.author.id == this.ctx.mee6UserID && this.searchTerms.every(term => msg.cleanContent.indexOf(term) != -1);
 
     private async fetchPreviousMessage(msg: Discord.Message) {
         let drilldownMessages = await msg.channel.fetchMessages({
@@ -82,5 +86,13 @@ export class DeepSearch {
         });
 
         return drilldownMessages.first();
+    }
+
+    private oldest(msgs: Discord.Message[]) {
+        return msgs.reduce((acc, val) => {
+            if (!acc) return val;
+            if (val.createdTimestamp < acc.createdTimestamp) return val;
+            return acc;
+        });
     }
 }
