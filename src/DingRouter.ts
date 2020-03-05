@@ -56,7 +56,7 @@ class DingRouterContext {
             return this.ctx.helpHandler.unknownInput(this.msg);
         }
 
-        let searchResult = await this.ctx.fetch.deepSearch("GG", level).doSearch(member.user.id);
+        let searchResult = await this.ctx.fetch.deepSearch("DING!", level).doSearch(member.user.id);
 
         if (searchResult) {
             this.ctx.send.replyEmbed(searchResult, level);
@@ -68,7 +68,7 @@ class DingRouterContext {
 
     private async getLevel(member: Discord.GuildMember, args: string[]) {
         if (args.length == 0) {
-            return await this.ctx.fetch.getUserLevel("GG", member).doSearch();
+            return await this.ctx.fetch.getUserLevel("DING!", member).doSearch();
         }
 
         if (!Number.isNaN(Number(args[0]))) {
