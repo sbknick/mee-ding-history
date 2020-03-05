@@ -20,7 +20,7 @@ export class DingRouter {
                 return drCtx.execMe(args);
 
             case "user":
-                return drCtx.execUser(args);
+                return drCtx.execUser(args.slice(1));
 
             default:
                 return drCtx.execDefault();
@@ -39,6 +39,9 @@ class DingRouterContext {
     }
 
     execUser(args: string[]) {
+        if (this.msg.source.mentions.members.size == 0) {
+            return this.execDefault();
+        }
         return this.exec(this.msg.source.mentions.members.first(), args);
     }
 
