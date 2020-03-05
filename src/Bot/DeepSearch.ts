@@ -5,6 +5,9 @@ import { logger } from "../Logger";
 import { BotContext } from ".";
 
 
+// [ matchedMessages, shouldSearchMore, oldestMessageID ]
+type MatchingMessagesTuple = [Discord.Message[], boolean, Discord.Snowflake];
+
 export class DeepSearch {
     private static readonly pageSize = 100;
     private static readonly numberRegex = /([\d])+/;
@@ -21,16 +24,17 @@ export class DeepSearch {
 
         let cancelled = false;
         let foundMessage: Discord.Message;
+        let messages: Discord.Message[];
 
         const channels = this.getGuildTextChannels();
 
         for (const channel of channels) {
             if (cancelled) break;
             let before: string = undefined;
+            let keepGoing: boolean = true;
 
-            while (!cancelled) {
-                const messages = await this.fetchMatchingMessages(channel, before);
-                if (messages.length == 0) break;
+            while (!cancelled && keepGoing) {
+                [messages, keepGoing, before] = await this.fetchMatchingMessages(channel, before);
 
                 for (const message of messages) {
                     const prev = await this.fetchPreviousMessage(message);
@@ -43,8 +47,6 @@ export class DeepSearch {
                     cancelled = true;
                     break;
                 }
-
-                before = this.oldest(messages).id;
             }
         }
 
@@ -56,13 +58,20 @@ export class DeepSearch {
         return channels.map(ch => <TextChannel>ch);
     }
 
-    private async fetchMatchingMessages(channel: Discord.TextChannel, before: string) {
-        let messages = await channel.fetchMessages({
+    private async fetchMatchingMessages(channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
+        const messages = await channel.fetchMessages({
             limit: DeepSearch.pageSize,
             before,
         });
 
-        return messages.filter(this.messageFilter).map(m => m);
+        const keepGoing = messages.size > 0;
+        const newBefore = keepGoing && this.oldest(messages.array()).id;
+
+        return [
+            messages.filter(this.messageFilter).map(m => m),
+            keepGoing,
+            newBefore
+        ];
     }
     
     private messageFilter = (msg: Discord.Message) =>
