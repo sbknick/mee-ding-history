@@ -1,20 +1,16 @@
 import Discord from "discord.js";
-import * as logger from "winston";
 
 import auth from "./auth.json";
 
-import { MessageRouter } from "./MessageRouter";
 import { Bot } from "./Bot";
 import { Convert } from "./Convert";
+import { MessageRouter } from "./MessageRouter";
+import { logger } from "./Logger";
 
 
 // Configure logger settings
 
-logger.remove(logger.transports.Console);
-logger.createLogger({
-    level: 'debug',
-}).add(new logger.transports.Console());
-
+logger.configure();
 
 // Initialize Discord Bot
 

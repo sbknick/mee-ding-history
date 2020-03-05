@@ -1,5 +1,6 @@
 import Discord, { TextChannel } from "discord.js";
-import logger from "winston";
+
+import { logger } from "../Logger";
 
 import { BotContext } from ".";
 
@@ -8,8 +9,6 @@ export class DeepSearch {
     private static readonly pageSize = 100;
     private static readonly numberRegex = /([\d])+/;
 
-    private userID: Discord.Snowflake;
-
     constructor(
         private ctx: BotContext,
         private guild: Discord.Guild,
@@ -17,20 +16,8 @@ export class DeepSearch {
         private level: string
     ) {}
 
-    me(): Promise<Discord.Message> {
-        logger.info(`Request: Deep Search: Me`);
-        this.userID = this.ctx.userID;
-        return this.doSearch();
-    }
-
-    mention(): Promise<Discord.Message> {
-        logger.info(`Request: Deep Search: Mention`);
-        this.userID = this.ctx.mentionUserID;
-        return this.doSearch();
-    }
-
-    private async doSearch(): Promise<Discord.Message> {
-        logger.info(`Starting user-requested deepSearch for userID: ${this.userID}`);
+    async doSearch(userID: string): Promise<Discord.Message> {
+        logger.info(`Starting user-requested deepSearch for userID: ${userID}`);
 
         let cancelled = false;
         let foundMessage: Discord.Message;
@@ -48,7 +35,7 @@ export class DeepSearch {
                 for (const message of messages) {
                     const prev = await this.fetchPreviousMessage(message);
 
-                    if (prev.author.id != this.userID) {
+                    if (prev.author.id != userID) {
                         throw new Error("previous message is not the expected author!");
                     }
 

@@ -1,6 +1,6 @@
 import Discord from "discord.js";
-import logger from "winston";
 
+import { logger } from "../Logger";
 import { Message } from "../Models/Message";
 import { Memory } from "../Models/Memory";
 
@@ -9,6 +9,7 @@ import { BotContext } from ".";
 
 export class Bot {
     private mee6: Discord.User;
+    private ctx: BotContext;
 
     constructor(
         private client: Discord.Client
@@ -27,13 +28,15 @@ export class Bot {
         });
     }
 
-    public getMsgContext = (msg: Message) => new BotContext(msg, this).executor;
+    public createMsgContext = (msg: Message) => {
+        this.ctx = new BotContext(this, msg);
+        return this.ctx.executor;
+    }
+
+    public getMsgContext = (msg: Message) => this.ctx;
 
     public userID = () => this.client.user.id;
     public mee6UserID = () => this.mee6.id;
-
-    public reply = (msg: Message, response: string) => msg.source.reply(response);
-    public dm = (msg: Message, response: string) => msg.source.author.send(response);
 
     public retrieveMessage: (memory: Memory) => string = memory => {
         const ch = <Discord.TextChannel>this.client.channels.get(memory.channelID);

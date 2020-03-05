@@ -1,27 +1,25 @@
-import Discord from "discord.js";
-import logger from "winston";
-
 import { Bot } from "./Bot";
-import { MemoryHandler } from "./MessageHandlers/MemoryHandler";
+import { DingRouter } from "./DingRouter";
+import { logger } from "./Logger";
 import { Message } from "./Models/Message";
 
 
 interface Router { route: (message: Message) => void };
 
 export class MessageRouter implements Router {
-    private memoryHandler: MemoryHandler;
+    private dingRouter: DingRouter;
 
-    public constructor (
+    public constructor(
         private bot: Bot
     ) {
-        this.memoryHandler = new MemoryHandler(bot);
+        this.dingRouter = new DingRouter(bot);
     }
 
     public route = async (msg: Message) =>
-        this.bot.getMsgContext(msg)(async ctx => {
+        this.bot.createMsgContext(msg)(async ctx => {
             if (msg.source.author.bot) {
                 if (msg.userID == this.bot.mee6UserID()) {
-                    this.memoryHandler.commit(msg);
+                    ctx.memoryHandler.commit(msg);
                 }
                 return;
             }
@@ -30,18 +28,16 @@ export class MessageRouter implements Router {
                 // Our bot needs to know if it will execute a command
                 // It will listen for messages that will start with `!`
                 if (msg.message.substring(0, 1) == '!') {
-                    var args = msg.message.slice(1).trim().split(/ +/g);
-                    var cmd = args[0];
-                
-                    args = args.splice(1);
+                    msg.source.channel.startTyping();
+
+                    let args = msg.message.slice(1).trim().split(/ +/g);
+                    const cmd = args[0];
+                    args = args.slice(1);
+
                     switch (cmd) {
                         // !ping
                     case "ping":
-                        ctx.reply("Pong!");
-                        break;
-
-                    case "repeat":
-                        this.memoryHandler.repeat(msg);
+                        ctx.send.reply("Pong!");
                         break;
 
                         // !ding
@@ -53,54 +49,16 @@ export class MessageRouter implements Router {
                             return msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
                         }
 
-                        switch (args[0]) {
-                            case "me":
-                                {
-                                    let level = "1";
-                                    let searchResult = await ctx.deepSearch("GG", level).me();
-
-                                    return ctx.reply(`at level ${level} you said:\n> ${searchResult.content}`);
-                                }
-
-                            case "user":
-                                {
-                                    if (!ctx.mentionUserID) {
-                                        return ctx.helpHandler.error(ctx.cmd)
-                                    }
-
-                                    logger.info("Received mention request:\n" + msg.message);
-                                    msg.source.channel.startTyping();
-
-                                    let level = "1";
-                                    let searchResult = await ctx.deepSearch("GG", level).mention();
-
-                                    if (searchResult) {
-                                        let embed = new Discord.RichEmbed()
-                                            .setColor(0xe2f5ec)
-                                            .setAuthor(searchResult.guild.member(searchResult.author).nickname)
-                                            .setTitle(`Level ${level}`)
-                                            .setDescription(searchResult.content)
-                                            .addField('\u200b', `[Jump to...](${searchResult.url})`)
-                                            .setTimestamp(searchResult.createdTimestamp)
-                                            .setFooter(`Brought to you by Blair :)`);
-
-                                        ctx.respond(embed);
-                                    }
-                                    else {
-                                        ctx.sorry();
-                                    }
-
-                                    return msg.source.channel.stopTyping();
-                                }
-
-                            default:
-                                return ctx.helpHandler.unknownInput(msg);
-                        }
+                        await this.dingRouter.route(msg, args);
                     }
                 }
             }
+            catch (error) {
+                logger.error(error);
+            }
             finally {
-                this.memoryHandler.remember(msg);
+                msg.source.channel.stopTyping();
+                ctx.memoryHandler.remember(msg);
             }
         });
 }

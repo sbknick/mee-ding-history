@@ -5,36 +5,42 @@ import { Message } from "../Models/Message";
 export class HelpHandler {
     private static readonly CMDS = [
         ["!ding help", "Shows this message"],
-        ["!ding me", "!ding me <level> : This will quote the line that you dinged on for a particular level. If no level is supplied, it will assume your current level."],
-        ["!ding me", "!ding user <level> : This will quote the line that you dinged on for a particular level. If no level is supplied, it will assume your current level."],
+        ["!ding me <level>", "Quotes the line that you dinged on for a particular level. If no level is supplied, it will assume your current level."],
+        ["!ding user <level>", "Quotes the line that the mentioned user dinged on for a particular level. If no level is supplied, it will assume their current level."],
     ];
 
-    public constructor (
+    constructor (
         private ctx: BotContext
     ) {}
 
-    public help() {
-        this.ctx.dm("help str");
+    help() {
+        const output = this.helpText();
+        this.ctx.send.cleanReply(output.join("\n"));
     }
 
-    public unknownInput(msg: Message) {
-        let output: string[] = [
+    unknownInput(msg: Message) {
+        const output: string[] = [
             "Unknown input: " + msg.message,
             "",
+            ...this.helpText()
+        ];
+
+        this.ctx.send.cleanReply(output.join("\n"));
+    }
+
+    error(cmd: string) {
+
+    }
+
+    private helpText(): string[] {
+        return [
             "Commands must be in the form of \"!ding <command> <args...>",
             "Valid commands are:",
             ...this.listHelpCommands()
         ];
-
-        this.ctx.dm(output.join("\n"));
-    }
-
-    public error(cmd: string) {
-
     }
 
     private listHelpCommands(): string[] {
-        let lines = HelpHandler.CMDS.map(c => c[0].padEnd(20) + ": " + c[1]);
-        return lines;
+        return HelpHandler.CMDS.map(c => c[0].padEnd(20) + ": " + c[1]);
     }
 }
