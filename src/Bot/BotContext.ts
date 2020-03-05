@@ -5,6 +5,7 @@ import { MemoryHandler } from "../MessageHandlers/MemoryHandler";
 import { Message } from "../Models/Message";
 
 import { Bot, DeepSearch } from ".";
+import { MemberLevelSearch } from "./MemberLevelSearch";
 
 
 interface ActionType {
@@ -53,16 +54,15 @@ export class BotContext {
                 .setFooter(`Brought to you by Blair`);
 
             this.respondWithoutQuote(embed);
-        }
+        },
     }
 
     readonly fetch = {
         deepSearch: (searchTerm: string, level: string) =>
             new DeepSearch(this, this.msg.source.guild, searchTerm, level),
 
-        getUserLevel: (user: Discord.GuildMember) => {
-            return "1";
-        }
+        getUserLevel: (searchTerm: string, member: Discord.GuildMember) =>
+            new MemberLevelSearch(this, member, searchTerm),
     }
     
     private readonly respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });

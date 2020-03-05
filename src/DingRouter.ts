@@ -50,7 +50,7 @@ class DingRouterContext {
     }
 
     private async exec(member: Discord.GuildMember, args: string[]) {
-        const level = this.getLevel(member, args);
+        const level = await this.getLevel(member, args);
 
         if (level === undefined) {
             return this.ctx.helpHandler.unknownInput(this.msg);
@@ -66,9 +66,9 @@ class DingRouterContext {
         }
     }
 
-    private getLevel(member: Discord.GuildMember, args: string[]) {
+    private async getLevel(member: Discord.GuildMember, args: string[]) {
         if (args.length == 0) {
-            return this.ctx.fetch.getUserLevel(member);
+            return await this.ctx.fetch.getUserLevel("GG", member).doSearch();
         }
 
         if (!Number.isNaN(Number(args[0]))) {
