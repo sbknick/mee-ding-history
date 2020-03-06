@@ -1,7 +1,6 @@
 import Discord from "discord.js";
 
-import { HelpHandler } from "../MessageHandlers/HelpHandler";
-import { MemoryHandler } from "../MessageHandlers/MemoryHandler";
+import { HelpHandler, MemoryHandler, TermHandler } from "../MessageHandlers";
 import { Message } from "../Models/Message";
 
 import { Bot, DeepSearch } from ".";
@@ -28,6 +27,7 @@ export class BotContext {
 
     readonly helpHandler: HelpHandler = new HelpHandler(this);
     readonly memoryHandler: MemoryHandler = new MemoryHandler(this);
+    readonly termHandler: TermHandler = new TermHandler(this);
 
     readonly send = {
         reply: (response: string) => this.msg.source.reply(response),
@@ -52,10 +52,10 @@ export class BotContext {
 
     readonly fetch = {
         deepSearch: (searchTerm: string, level: string) =>
-            new DeepSearch(this, this.msg.source.guild, searchTerm, level),
+            new DeepSearch(this, this.msg.source.guild, this.termHandler.getTerm(), level),
 
         getUserLevel: (searchTerm: string, member: Discord.GuildMember) =>
-            new MemberLevelSearch(this, member, searchTerm),
+            new MemberLevelSearch(this, member, this.termHandler.getTerm()),
     }
     
     private readonly respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });

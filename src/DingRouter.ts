@@ -2,7 +2,7 @@ import Discord from "discord.js";
 
 import { Bot, BotContext } from "./Bot";
 import { Message } from "./Models/Message";
-import { TermHandler } from "./MessageHandlers/TermHandler";
+import { TermHandler } from "./MessageHandlers";
 
 
 export class DingRouter {
@@ -68,7 +68,7 @@ class DingRouterContext {
         const level = await this.getLevel(member, args);
 
         if (level === undefined) {
-            return this.ctx.helpHandler.unknownInput(this.msg);
+            return this.ctx.helpHandler.levelError();
         }
 
         let searchResult = await this.ctx.fetch.deepSearch("DING!", level).doSearch(member.user.id);
