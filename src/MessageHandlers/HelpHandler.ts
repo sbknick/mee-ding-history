@@ -11,6 +11,10 @@ export class HelpHandler {
         ["!ding user @name <level>", "Quotes the line that the mentioned user dinged on for a particular level. If no level is supplied, it will assume their current level."],
     ];
 
+    private static readonly MANAGER_CMDS = [
+        ["!ding term <term>", "Get or set the search term so I know which MEE6 messages are the right ones to look at. Defaults to \"GG\""],
+    ];
+
     constructor (
         private ctx: BotContext
     ) {}
@@ -23,7 +27,7 @@ export class HelpHandler {
     unknownInput(msg: Message) {
         const output: string[] = [
             "Unknown input: " + msg.message,
-            "",
+            ,
             ...this.helpText()
         ];
 
@@ -54,16 +58,32 @@ export class HelpHandler {
         this.ctx.send.reply(output.join("\n"));
     }
 
+    unauthorized() {
+        this.ctx.send.reply("You don't have permission to do that...")
+    }
+
     private helpText(): string[] {
-        return [
+        const output: string[] = [
             `Commands must be in the form of "!ding <command> <args...>"`,
-            "",
+            ,
             "Valid commands are:",
             ...this.listHelpCommands()
         ];
+
+        if (this.ctx.member.permissions.has("MANAGE_GUILD", true)) {
+            output.push(
+                undefined,
+                "Commands for Managers:",
+                ...this.listHelpCommands(true))
+        }
+
+        return output;
     }
 
-    private listHelpCommands(): string[] {
-        return HelpHandler.CMDS.map(c => c[0].padEnd(20) + ": " + c[1]);
+    private listHelpCommands(authorized: boolean = false): string[] {
+        const map = (cmds: string[][]) =>
+            cmds.map(c => `\n**${c[0]}**\n    _${c[1]}_`);
+
+        return map(authorized ? HelpHandler.MANAGER_CMDS : HelpHandler.CMDS);
     }
 }

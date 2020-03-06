@@ -24,6 +24,8 @@ export class DingRouter {
                 return drCtx.execUser(args.slice(1));
 
             case "term":
+                if (!msg.source.member.permissions.has("MANAGE_GUILD", true))
+                    return this.bot.getMsgContext(msg).helpHandler.unauthorized();
                 return drCtx.execTerm(args);
 
             default:
