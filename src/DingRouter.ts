@@ -2,6 +2,7 @@ import Discord from "discord.js";
 
 import { Bot, BotContext } from "./Bot";
 import { Message } from "./Models/Message";
+import { TermHandler } from "./MessageHandlers/TermHandler";
 
 
 export class DingRouter {
@@ -22,6 +23,9 @@ export class DingRouter {
             case "user":
                 return drCtx.execUser(args.slice(1));
 
+            case "term":
+                return drCtx.execTerm(args);
+
             default:
                 return drCtx.execDefault();
         }
@@ -33,6 +37,17 @@ class DingRouterContext {
         private ctx: BotContext,
         private msg: Message
     ) {}
+
+    execTerm(args: string[]) {
+        if (args.length == 0) {
+            const term = new TermHandler(this.ctx).getTerm();
+            this.ctx.send.reply(`My current search term is "${term}"`);
+        }
+        else {
+            new TermHandler(this.ctx).setTerm(args[0]);
+            this.ctx.send.reply(`Okay, my new search term is "${args[0]}"`);
+        }
+    }
 
     execMe(args: string[]) {
         return this.exec(this.msg.source.member, args);

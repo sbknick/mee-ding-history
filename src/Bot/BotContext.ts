@@ -13,22 +13,15 @@ interface ActionType {
 }
 
 export class BotContext {
-    readonly userID: Discord.Snowflake;
-    readonly mentionUserID: Discord.Snowflake;
     readonly mee6UserID: Discord.Snowflake;
-    readonly cmd: string;
+    readonly member: Discord.GuildMember;
 
     constructor(
         bot: Bot,
         private msg: Message
     ) {
-        this.userID = msg.userID;
         this.mee6UserID = bot.mee6UserID();
-        this.cmd = msg.message;
-
-        if (msg.source.mentions.users.size > 0) {
-            this.mentionUserID = msg.source.mentions.users.first().id;
-        }
+        this.member = msg.source.member;
     }
 
     readonly executor = async (action: ActionType) => await action(this);
@@ -38,7 +31,7 @@ export class BotContext {
 
     readonly send = {
         reply: (response: string) => this.msg.source.reply(response),
-        dm: (response: string) => this.msg.source.member.send(response),
+        dm: (response: string) => this.msg.source.author.send(response),
         cleanReply: (response: string) => this.msg.source.reply(response).then((m: Discord.Message) => m.delete(5 * 60 * 1000)),
 
         replySorry: () => this.send.reply(` sorry, I can't find that. :(`),

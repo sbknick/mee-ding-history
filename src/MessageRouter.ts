@@ -28,28 +28,21 @@ export class MessageRouter implements Router {
                 // Our bot needs to know if it will execute a command
                 // It will listen for messages that will start with `!`
                 if (msg.message.substring(0, 1) == '!') {
-                    msg.source.channel.startTyping();
-
                     let args = msg.message.slice(1).trim().split(/ +/g);
                     const cmd = args[0];
                     args = args.slice(1);
 
                     switch (cmd) {
-                        // !ping
-                    case "ping":
-                        ctx.send.reply("Pong!");
-                        break;
-
                         // !ding
-                    case "ding":
-                        if (args.length == 0 || args[0] == "help")
-                            return ctx.helpHandler.help();
+                        case "ding":
+                            if (args.length == 0 || args[0] == "help")
+                                return ctx.helpHandler.help();
 
-                        if (!msg.source.guild) {
-                            return msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
-                        }
+                            if (!msg.source.guild) {
+                                return msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
+                            }
 
-                        await this.dingRouter.route(msg, args);
+                            await this.dingRouter.route(msg, args);
                     }
                 }
             }
@@ -57,7 +50,6 @@ export class MessageRouter implements Router {
                 logger.error(error);
             }
             finally {
-                msg.source.channel.stopTyping();
                 ctx.memoryHandler.remember(msg);
             }
         });
