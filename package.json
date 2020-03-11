@@ -6,7 +6,8 @@
     "author": "Blair Knickerbocker",
     "scripts": {
         "build": "tsc",
-        "start": "node dist/app.js"
+        "start": "node dist/app.js",
+        "watch": "tsc --watch"
     },
     "dependencies": {
         "discord.js": "^11.5.1",

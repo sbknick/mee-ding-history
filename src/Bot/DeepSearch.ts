@@ -29,6 +29,7 @@ export class DeepSearch {
         const channels = this.getGuildTextChannels();
 
         for (const channel of channels) {
+            // channel.messages.size
             if (cancelled) break;
             let before: string = undefined;
             let keepGoing: boolean = true;
@@ -84,10 +85,10 @@ export class DeepSearch {
     private async fetchPreviousMessage(msg: Discord.Message) {
         let drilldownMessages = await msg.channel.fetchMessages({
             limit: 1,
-            before: msg.id
+            before: msg.id,
         });
 
-        return drilldownMessages.first();
+        return drilldownMessages.find(m => m.author.id === msg.mentions.members.first().id);
     }
 
     private oldest(msgs: Discord.Message[]) {
