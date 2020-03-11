@@ -37,9 +37,9 @@ export class BotContext {
         replySorry: () => this.send.reply(` sorry, I can't find that. :(`),
 
         replyEmbed: (msg: Discord.Message, level: string) => {
-            let embed = new Discord.RichEmbed()
+            const embed = new Discord.RichEmbed()
                 .setColor(0x42b983)
-                .setAuthor(msg.guild.member(msg.author).nickname)
+                .setAuthor(msg.guild.member(msg.author).displayName)
                 .setTitle(`Level ${level}`)
                 .setDescription(msg.content)
                 .addField('\u200b', `[Jump to...](${msg.url})`)
@@ -51,10 +51,10 @@ export class BotContext {
     }
 
     readonly fetch = {
-        deepSearch: (searchTerm: string, level: string) =>
+        deepSearch: (level: string) =>
             new DeepSearch(this, this.msg.source.guild, this.termHandler.getTerm(), level),
 
-        getUserLevel: (searchTerm: string, member: Discord.GuildMember) =>
+        getUserLevel: (member: Discord.GuildMember) =>
             new MemberLevelSearch(this, member, this.termHandler.getTerm()),
     }
     

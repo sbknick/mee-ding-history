@@ -19,7 +19,7 @@ export class MemberLevelSearch {
     ) {}
 
     async doSearch(): Promise<string> {
-        logger.info(`Starting deep search for level of userID: ${this.member.user.id}`);
+        logger.info(`Starting deep search for level of userID: ${this.member.id}`);
 
         const channels = this.getGuildTextChannels();
 
@@ -84,8 +84,10 @@ export class MemberLevelSearch {
     }
     
     private messageFilter = (msg: Discord.Message) =>
-        msg.author.id == this.ctx.mee6UserID &&
-        msg.cleanContent.indexOf(this.searchTerm) != -1;
+        msg.author.id === this.ctx.mee6UserID &&
+        msg.mentions.members.size > 0 &&
+        msg.mentions.members.first().id === this.member.id &&
+        msg.cleanContent.indexOf(this.searchTerm) !== -1;
 
     private oldest(msgs: Discord.Message[]) {
         return msgs.reduce((acc, val) => {

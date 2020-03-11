@@ -5,7 +5,7 @@ import { BotContext } from "../Bot";
 
 export class TermHandler {
     private static termMap = new Map<Discord.Guild, string>();
-    private static defaultTerm = "GG";
+    private static defaultTerm = "Gratz!"; // "GG";
 
     constructor(
         private ctx: BotContext

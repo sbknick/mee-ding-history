@@ -47,7 +47,7 @@ export class MessageRouter implements Router {
                 }
             }
             catch (error) {
-                logger.error(error);
+                logger.error("Message Handling Failed: ", error);
             }
             finally {
                 ctx.memoryHandler.remember(msg);

@@ -34,7 +34,7 @@ export class DeepSearch {
             let keepGoing: boolean = true;
 
             while (!cancelled && keepGoing) {
-                [messages, keepGoing, before] = await this.fetchMatchingMessages(channel, before);
+                [messages, keepGoing, before] = await this.fetchMatchingMessages(userID, channel, before);
 
                 for (const message of messages) {
                     const prev = await this.fetchPreviousMessage(message);
@@ -58,7 +58,7 @@ export class DeepSearch {
         return channels.map(ch => <TextChannel>ch);
     }
 
-    private async fetchMatchingMessages(channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
+    private async fetchMatchingMessages(userID: Discord.Snowflake, channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
         const messages = await channel.fetchMessages({
             limit: DeepSearch.pageSize,
             before,
@@ -68,16 +68,18 @@ export class DeepSearch {
         const newBefore = keepGoing && this.oldest(messages.array()).id;
 
         return [
-            messages.filter(this.messageFilter).map(m => m),
+            messages.filter(this.messageFilter(userID)).map(m => m),
             keepGoing,
             newBefore
         ];
     }
     
-    private messageFilter = (msg: Discord.Message) =>
-        msg.author.id == this.ctx.mee6UserID &&
-        msg.cleanContent.indexOf(this.searchTerm) != -1 &&
-        DeepSearch.numberRegex.exec(msg.cleanContent)[0] == this.level;
+    private messageFilter = (userID: Discord.Snowflake) => (msg: Discord.Message) =>
+        msg.author.id === this.ctx.mee6UserID &&
+        msg.mentions.members.size > 0 &&
+        msg.mentions.members.first().id === userID &&
+        msg.cleanContent.indexOf(this.searchTerm) !== -1 &&
+        DeepSearch.numberRegex.exec(msg.cleanContent)[0] === this.level;
 
     private async fetchPreviousMessage(msg: Discord.Message) {
         let drilldownMessages = await msg.channel.fetchMessages({
