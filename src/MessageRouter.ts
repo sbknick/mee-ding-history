@@ -1,56 +1,56 @@
-import HelpHandler from "./MessageHandlers/HelpHandler";
-import Bot from "./Bot";
+import { Bot } from "./Bot";
+import { DingRouter } from "./DingRouter";
+import { logger } from "./Logger";
+import { Message } from "./Models/Message";
 
-type routeDelegate = (msg: message) => void;
-type Router = { route: messageCallback };
 
-class MessageRouter implements Router {
-    private helpHandler: HelpHandler;
+interface Router { route: (message: Message) => void };
 
-    public constructor (
+export class MessageRouter implements Router {
+    private dingRouter: DingRouter;
+
+    public constructor(
         private bot: Bot
     ) {
-        this.helpHandler = new HelpHandler(bot);
+        this.dingRouter = new DingRouter(bot);
     }
 
-    private XForm = (del: routeDelegate) => (user: string, userID: string, channelID: string, message: string, event: WebSocketEvent): void => {
-        del({user, userID, channelID, message, event});
-    }
+    public route = async (msg: Message) =>
+        this.bot.createMsgContext(msg)(async ctx => {
+            if (msg.source.author.bot) {
+                if (msg.userID == this.bot.mee6UserID()) {
+                    ctx.memoryHandler.commit(msg);
+                }
+                return;
+            }
 
-    private doRoute: (msg: message) => void = msg => {
-        
-        // Our bot needs to know if it will execute a command
-        // It will listen for messages that will start with `!`
-        if (msg.message.substring(0, 1) == '!') {
-            var args = msg.message.substring(1).split(' ');
-            var cmd = args[0];
-        
-            args = args.splice(1);
-            switch (cmd) {
-                // !ping
-            case "ping":
-                this.bot.reply(msg, "Pong!");
-                break;
+            try {
+                // Our bot needs to know if it will execute a command
+                // It will listen for messages that will start with `!`
+                if (msg.message.substring(0, 1) == '!') {
+                    let args = msg.message.slice(1).trim().split(/ +/g);
+                    const cmd = args[0];
+                    args = args.slice(1);
 
-                // Just add any case commands if you want to..
+                    switch (cmd) {
+                        // !ding
+                        case "ding":
+                            if (args.length == 0 || args[0] == "help")
+                                return ctx.helpHandler.help();
 
-                // !ding
-            case "ding":
-                if (args.length == 0 || args[0] == "help")
-                    return this.helpHandler.help(msg);
+                            if (!msg.source.guild) {
+                                return msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
+                            }
 
-                switch (args[0]) {
-                    case "me":
-                        return this.bot.reply(msg, "I can't remember... Sorry!");
-
-                    default:
-                        return this.helpHandler.unknownInput(msg);
+                            await this.dingRouter.route(msg, args);
+                    }
                 }
             }
-        }
-    }
-
-    public route: messageCallback = this.XForm(this.doRoute);
+            catch (error) {
+                logger.error(error);
+            }
+            finally {
+                ctx.memoryHandler.remember(msg);
+            }
+        });
 }
-
-export default MessageRouter;

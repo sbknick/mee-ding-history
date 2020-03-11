@@ -1,48 +1,89 @@
-import IHandler from "./IHandler";
-import Bot from "../Bot";
+import { BotContext } from "../Bot";
 
-class HelpHandler implements IHandler {
-    private cmds = [
+import { Message } from "../Models/Message";
+import { ValidCmds } from "../Models/ValidCmds";
+
+
+export class HelpHandler {
+    private static readonly CMDS = [
         ["!ding help", "Shows this message"],
-        ["!ding me", "!ding me <level> : This will quote the line that you dinged on for a particular level. If no level is supplied, it will assume your current level."],
+        ["!ding me <level>", "Quotes the line that you dinged on for a particular level. If no level is supplied, it will assume your current level."],
+        ["!ding user @name <level>", "Quotes the line that the mentioned user dinged on for a particular level. If no level is supplied, it will assume their current level."],
     ];
 
-    public constructor (
-        private bot: Bot
+    private static readonly MANAGER_CMDS = [
+        ["!ding term <term>", "Get or set the search term so I know which MEE6 messages are the right ones to look at. Defaults to \"GG\""],
+    ];
+
+    constructor (
+        private ctx: BotContext
     ) {}
 
-    handle: messageCallback;
-
-    public help(msg: message) {
-
-        this.bot.dm(msg, "str");
-        // msg.dm()
+    help() {
+        const output = this.helpText();
+        this.ctx.send.cleanReply(output.join("\n"));
     }
 
-    public unknownInput(msg: message) {
-        // this.bot.directMessages;
-        // this.bot.getMessage({
-        //     channelID, messageID
-        // })
-        let output: string[] = [
+    unknownInput(msg: Message) {
+        const output: string[] = [
             "Unknown input: " + msg.message,
-            "",
-            "Commands must be in the form of \"!ding <command> <args...>",
+            ,
+            ...this.helpText()
+        ];
+
+        this.ctx.send.cleanReply(output.join("\n"));
+    }
+
+    error(msg: Message, args: string[]) {
+        const cmd = <ValidCmds>args[0];
+
+        const output: string[] = [ `Unexpected input: "${msg.message}"` ];
+        
+        switch (cmd) {
+            case "me":
+            case "user":
+                output.push()
+                output.push(`Expected input in the form of "!ding (me/user @mention) <level>`, "");
+                break;
+        }
+
+        this.ctx.send.reply(output.join("\n"));
+    }
+
+    levelError() {
+        const output: string[] = [
+            "Level not found for user. Is your search term set correctly?"
+        ];
+
+        this.ctx.send.reply(output.join("\n"));
+    }
+
+    unauthorized() {
+        this.ctx.send.reply("You don't have permission to do that...")
+    }
+
+    private helpText(): string[] {
+        const output: string[] = [
+            `Commands must be in the form of "!ding <command> <args...>"`,
+            ,
             "Valid commands are:",
             ...this.listHelpCommands()
         ];
 
-        this.bot.dm(msg, output.join("\n"));
+        if (this.ctx.member.permissions.has("MANAGE_GUILD", true)) {
+            output.push(
+                undefined,
+                "Commands for Managers:",
+                ...this.listHelpCommands(true))
+        }
+
+        return output;
     }
 
-    public error(cmd: string) {
+    private listHelpCommands(authorized: boolean = false): string[] {
+        const map = (cmds: string[][]) =>
+            cmds.map(c => `\n**${c[0]}**\n    _${c[1]}_`);
 
-    }
-
-    private listHelpCommands(): string[] {
-        let lines = this.cmds.map(c => c[0].padEnd(20) + ": " + c[1]);
-        return lines;
+        return map(authorized ? HelpHandler.MANAGER_CMDS : HelpHandler.CMDS);
     }
 }
-
-export default HelpHandler;
