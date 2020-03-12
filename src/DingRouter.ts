@@ -27,7 +27,7 @@ export class DingRouter {
             case "term":
                 if (msg.source.member.permissions.has("MANAGE_GUILD", true) || Common.isDeveloper(msg.userID))
                     return drCtx.execTerm(args);
-                return this.bot.getMsgContext(msg).helpHandler.unauthorized();
+                return this.bot.getMsgContext(msg).helpHandler().unauthorized();
 
             default:
                 return drCtx.execDefault();
@@ -64,14 +64,14 @@ class DingRouterContext {
     }
 
     execDefault() {
-        this.ctx.helpHandler.unknownInput(this.msg);
+        this.ctx.helpHandler().unknownInput(this.msg);
     }
 
     private async exec(member: Discord.GuildMember, args: string[]) {
         const level = await this.getLevel(member, args);
 
         if (level === undefined) {
-            return this.ctx.helpHandler.levelError();
+            return this.ctx.helpHandler().levelError();
         }
 
         let searchResult = await this.ctx.fetch.deepSearch(level).doSearch(member.user.id);

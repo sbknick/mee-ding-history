@@ -1,6 +1,6 @@
 import Discord from "discord.js";
 
-import { HelpHandler, MemoryHandler, TermHandler } from "../MessageHandlers";
+import { HelpHandler, MemoryHandler, ReportHandler, TermHandler } from "../MessageHandlers";
 import { Message } from "../Models/Message";
 
 import { Bot, DeepSearch, MemberLevelSearch } from ".";
@@ -14,6 +14,11 @@ export class BotContext {
     readonly mee6UserID: Discord.Snowflake;
     readonly member: Discord.GuildMember;
 
+    private _helpHandler: HelpHandler;
+    private _memoryHandler: MemoryHandler;
+    private _reportHandler: ReportHandler;
+    private _termHandler: TermHandler;
+
     constructor(
         bot: Bot,
         private msg: Message
@@ -24,9 +29,10 @@ export class BotContext {
 
     readonly executor = async (action: ActionType) => await action(this);
 
-    readonly helpHandler: HelpHandler = new HelpHandler(this);
-    readonly memoryHandler: MemoryHandler = new MemoryHandler(this);
-    readonly termHandler: TermHandler = new TermHandler(this);
+    readonly helpHandler = () => this._helpHandler || (this._helpHandler = new HelpHandler(this));
+    readonly memoryHandler = () => this._memoryHandler || (this._memoryHandler = new MemoryHandler(this));
+    readonly reportHandler = () => this._reportHandler || (this._reportHandler = new ReportHandler(this));
+    readonly termHandler = () => this._termHandler || (this._termHandler = new TermHandler(this));
 
     readonly send = {
         reply: (response: string) => this.msg.source.reply(response),
@@ -51,10 +57,10 @@ export class BotContext {
 
     readonly fetch = {
         deepSearch: (level: string) =>
-            new DeepSearch(this, this.msg.source, this.termHandler.getTerm(), level),
+            new DeepSearch(this, this.msg.source, this.termHandler().getTerm(), level),
 
         getUserLevel: (member: Discord.GuildMember) =>
-            new MemberLevelSearch(this, member, this.termHandler.getTerm()),
+            new MemberLevelSearch(this, member, this.termHandler().getTerm()),
     }
     
     private readonly respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });

@@ -2,6 +2,7 @@ import { Bot } from "./Bot";
 import { DingRouter } from "./DingRouter";
 import { logger } from "./Logger";
 import { Message } from "./Models/Message";
+import { Common } from "./Common";
 
 
 interface Router { route: (message: Message) => void };
@@ -19,7 +20,7 @@ export class MessageRouter implements Router {
         this.bot.createMsgContext(msg)(async ctx => {
             if (msg.source.author.bot) {
                 if (msg.userID == this.bot.mee6UserID()) {
-                    ctx.memoryHandler.commit(msg);
+                    ctx.memoryHandler().commit(msg);
                 }
                 return;
             }
@@ -36,9 +37,13 @@ export class MessageRouter implements Router {
                         // !ding
                         case "ding":
                             if (args.length == 0 || args[0] == "help")
-                                return ctx.helpHandler.help();
+                                return ctx.helpHandler().help();
 
                             if (!msg.source.guild) {
+                                if (Common.isDeveloper(msg.userID) && args[0] === "report") {
+                                    return ctx.reportHandler().report();
+                                }
+
                                 return msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
                             }
 
@@ -50,7 +55,7 @@ export class MessageRouter implements Router {
                 logger.error("Message Handling Failed: ", error);
             }
             finally {
-                ctx.memoryHandler.remember(msg);
+                ctx.memoryHandler().remember(msg);
             }
         });
 }
