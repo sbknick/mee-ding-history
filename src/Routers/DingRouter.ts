@@ -1,9 +1,9 @@
 import Discord from "discord.js";
 
-import { Bot, BotContext } from "./Bot";
-import { Message } from "./Models/Message";
-import { TermHandler } from "./MessageHandlers";
-import { Common } from "./Common";
+import { Bot, BotContext } from "../Bot";
+import { Message } from "../Models/Message";
+import { TermHandler } from "../MessageHandlers";
+import { Common } from "../Common";
 
 
 export class DingRouter {

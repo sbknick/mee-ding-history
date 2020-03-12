@@ -85,6 +85,15 @@ class MonitoringServicex {
         ].join("\n");
     }
 
+    clear(args: string[]) {
+        // if (args[2] === "all")
+        // if (args[2] === )
+
+        this.runningServices.clear();
+        this.successfulServices.clear();
+        this.erroredServices.clear();
+    }
+
     private format = (kvp: [string, (TimestampedService | SuccessfulService | ErroredService)]) => {
         const service = kvp[1];
         return `User ${service.requestingUserID} -- ${service.command} -- ${service.progress}` +

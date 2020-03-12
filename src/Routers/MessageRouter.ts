@@ -1,8 +1,8 @@
-import { Bot } from "./Bot";
+import { Bot } from "../Bot";
 import { DingRouter } from "./DingRouter";
-import { logger } from "./Logger";
-import { Message } from "./Models/Message";
-import { Common } from "./Common";
+import { logger } from "../Logger";
+import { Message } from "../Models/Message";
+import { Common } from "../Common";
 
 
 interface Router { route: (message: Message) => void };
@@ -43,7 +43,7 @@ export class MessageRouter implements Router {
                                 if (Common.isDeveloper(msg.userID) && args[0] === "report") {
                                     await ctx.reportHandler().report();
                                     if (args.length > 1 && (args[1] === "-c" || args[1] === "--clear")) {
-                                        await ctx.reportHandler().clear();
+                                        await ctx.reportHandler().clear(args);
                                     }
                                     return;
                                 }

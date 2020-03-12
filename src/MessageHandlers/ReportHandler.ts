@@ -12,7 +12,8 @@ export class ReportHandler {
         this.ctx.send.reply(report);
     }
 
-    async clear() {
-        this.ctx.send.reply("cleared.");
+    async clear(args: string[]) {
+        MonitoringService.clear(args);
+        this.ctx.send.reply("Cleared.");
     }
 }
