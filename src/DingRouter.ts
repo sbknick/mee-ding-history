@@ -3,6 +3,7 @@ import Discord from "discord.js";
 import { Bot, BotContext } from "./Bot";
 import { Message } from "./Models/Message";
 import { TermHandler } from "./MessageHandlers";
+import { Common } from "./Common";
 
 
 export class DingRouter {
@@ -24,9 +25,9 @@ export class DingRouter {
                 return drCtx.execUser(args.slice(1));
 
             case "term":
-                if (!msg.source.member.permissions.has("MANAGE_GUILD", true))
-                    return this.bot.getMsgContext(msg).helpHandler.unauthorized();
-                return drCtx.execTerm(args);
+                if (msg.source.member.permissions.has("MANAGE_GUILD", true) || Common.isDeveloper(msg.userID))
+                    return drCtx.execTerm(args);
+                return this.bot.getMsgContext(msg).helpHandler.unauthorized();
 
             default:
                 return drCtx.execDefault();
