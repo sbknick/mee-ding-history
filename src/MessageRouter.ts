@@ -41,10 +41,15 @@ export class MessageRouter implements Router {
 
                             if (!msg.source.guild) {
                                 if (Common.isDeveloper(msg.userID) && args[0] === "report") {
-                                    return ctx.reportHandler().report();
+                                    await ctx.reportHandler().report();
+                                    if (args.length > 1 && (args[1] === "-c" || args[1] === "--clear")) {
+                                        await ctx.reportHandler().clear();
+                                    }
+                                    return;
                                 }
-
-                                return msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
+                                else {
+                                    return await msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
+                                }
                             }
 
                             await this.dingRouter.route(msg, args);

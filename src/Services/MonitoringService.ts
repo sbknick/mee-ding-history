@@ -5,20 +5,12 @@ interface Service {
     requestingUserID?: Discord.Snowflake;
     messageID?: Discord.Snowflake;
     command?: string;
-    progress?: () => Number;
+    progress?: () => number;
 }
 
-type TimestampedService = Service & {
-    timestamp: Number,
-};
-
-type SuccessfulService = TimestampedService & {
-    endTimestamp: Number,
-}
-
-type ErroredService = SuccessfulService & {
-    error: string,
-};
+type TimestampedService = Service & { timestamp: number };
+type SuccessfulService = TimestampedService & { endTimestamp: number };
+type ErroredService = SuccessfulService & { error: string };
 
 class MonitoringServicex {
     // Key: GuildID
@@ -54,17 +46,65 @@ class MonitoringServicex {
         }
     }
 
-    private getServices(guildID: Discord.Snowflake) {
-        return this.getListFrom(this.runningServices, guildID);
+    generateReport() {
+        const running = () => {
+            const servs = this.toFlatArray(this.runningServices);
+
+            return [
+                "Running requests:",
+                ...(servs.length > 0 ? servs.map(this.format) : [ "None" ])
+            ];
+        }
+
+        const successful = () => {
+            const servs = this.toFlatArray(this.successfulServices);
+
+            return [
+                "",
+                "Successful requests:",
+                ...(servs.length > 0 ? servs.map(this.format) : [ "None" ])
+            ];
+        }
+
+        const errors = () => {
+            const errs = this.toFlatArray(this.erroredServices);
+
+            if (errors.length === 0) return [];
+
+            return [
+                "",
+                "Errored requests:",
+                ...errs.map(this.format)
+            ];
+        };
+        
+        return [
+            ...running(),
+            ...successful(),
+            ...errors(),
+        ].join("\n");
     }
 
-    private getSuccessfulServices(guildID: Discord.Snowflake): SuccessfulService[] {
-        return this.getListFrom(this.successfulServices, guildID) as SuccessfulService[];
+    private format = (kvp: [string, (TimestampedService | SuccessfulService | ErroredService)]) => {
+        const service = kvp[1];
+        return `User ${service.requestingUserID} -- ${service.command} -- ${service.progress}` +
+        ` -- Elapsed: ${((<any>service).endTimestamp || Date.now()) - service.timestamp}` +
+        (<any>service).error && ` -- Error: ${(<any>service).error}`;
     }
 
-    private getErroredServices(guildID: Discord.Snowflake): ErroredService[] {
-        return this.getListFrom(this.erroredServices, guildID) as ErroredService[];
+    private toFlatArray<K, V>(map: Map<K, V[]>): [K, V][] {
+        const out: [K, V][] = [];
+
+        for (const [k, vs] of map)
+            for (const v of vs)
+                out.push([k, v]);
+
+        return out;
     }
+
+    private getServices = (guildID: Discord.Snowflake) => this.getListFrom(this.runningServices, guildID);
+    private getSuccessfulServices = (guildID: Discord.Snowflake) => this.getListFrom(this.successfulServices, guildID) as SuccessfulService[];
+    private getErroredServices = (guildID: Discord.Snowflake) => this.getListFrom(this.erroredServices, guildID) as ErroredService[];
 
     private getListFrom(map: Map<Discord.Snowflake, TimestampedService[]>, guildID: Discord.Snowflake) {
         let serviceList = map.get(guildID);

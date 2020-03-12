@@ -8,6 +8,11 @@ export class ReportHandler {
     ) {}
 
     async report() {
-        this.ctx.send.reply("report!");
+        const report = MonitoringService.generateReport();
+        this.ctx.send.reply(report);
+    }
+
+    async clear() {
+        this.ctx.send.reply("cleared.");
     }
 }
