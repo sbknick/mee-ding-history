@@ -4,15 +4,13 @@ import { logger } from "../Logger";
 
 import { BotContext } from ".";
 import { MonitoringService } from "../Services/MonitoringService";
+import { Common } from "../Common";
 
 
-// [ matchedMessages, shouldSearchMore, oldestMessageID ]
+//                        [ matchedMessages, shouldSearchMore, oldestMessageID ]
 type MatchingMessagesTuple = [Discord.Message[], boolean, Discord.Snowflake];
 
 export class DeepSearch {
-    private static readonly pageSize = 100;
-    private static readonly numberRegex = /([\d])+/;
-
     constructor(
         private ctx: BotContext,
         private msg: Discord.Message,
@@ -75,13 +73,13 @@ export class DeepSearch {
     }
 
     private getGuildTextChannels() {
-        const channels = this.msg.guild.channels.filter(ch => ch.type == "text");
+        const channels = this.msg.guild.channels.filter(ch => ch.type === "text");
         return channels.map(ch => <TextChannel>ch);
     }
 
     private async fetchMatchingMessages(userID: Discord.Snowflake, channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
         const messages = await channel.fetchMessages({
-            limit: DeepSearch.pageSize,
+            limit: Common.searchPageSize,
             before,
         });
 
@@ -100,7 +98,7 @@ export class DeepSearch {
         msg.mentions.members.size > 0 &&
         msg.mentions.members.first().id === userID &&
         msg.cleanContent.indexOf(this.searchTerm) !== -1 &&
-        DeepSearch.numberRegex.exec(msg.cleanContent)[0] === this.level;
+        Common.extractNumber(msg.cleanContent) === this.level;
 
     private async fetchPreviousMessage(msg: Discord.Message) {
         let drilldownMessages = await msg.channel.fetchMessages({

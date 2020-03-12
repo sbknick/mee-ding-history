@@ -3,15 +3,13 @@ import Discord, { TextChannel } from "discord.js";
 import { logger } from "../Logger";
 
 import { BotContext } from ".";
+import { Common } from "../Common";
 
 
-// [ matchedMessages, shouldSearchMore, oldestMessageID ]
+//                        [ matchedMessages, shouldSearchMore, oldestMessageID ]
 type MatchingMessagesTuple = [Discord.Message[], boolean, Discord.Snowflake];
 
 export class MemberLevelSearch {
-    private static readonly pageSize = 100;
-    private static readonly numberRegex = /([\d])+/;
-
     constructor(
         private ctx: BotContext,
         private member: Discord.GuildMember,
@@ -38,7 +36,7 @@ export class MemberLevelSearch {
                 const results = await this.fetchMatchingMessages(channel, before);
 
                 for (const message of results[0] /* messages */) {
-                    const level = MemberLevelSearch.numberRegex.exec(message.cleanContent)[0];
+                    const level = Common.extractNumber(message.cleanContent);
                     if (!level) throw new Error("WTF");
                     if (Number(level) > Number(levelResult)) {
                         levelResult = level;
@@ -69,7 +67,7 @@ export class MemberLevelSearch {
     
     private async fetchMatchingMessages(channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
         const messages = await channel.fetchMessages({
-            limit: MemberLevelSearch.pageSize,
+            limit: Common.searchPageSize,
             before,
         });
 
