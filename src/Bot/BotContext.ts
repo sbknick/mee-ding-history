@@ -3,8 +3,7 @@ import Discord from "discord.js";
 import { HelpHandler, MemoryHandler, TermHandler } from "../MessageHandlers";
 import { Message } from "../Models/Message";
 
-import { Bot, DeepSearch } from ".";
-import { MemberLevelSearch } from "./MemberLevelSearch";
+import { Bot, DeepSearch, MemberLevelSearch } from ".";
 
 
 interface ActionType {
