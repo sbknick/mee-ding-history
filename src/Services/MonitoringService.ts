@@ -2,10 +2,10 @@ import Discord from "discord.js";
 
 
 interface Service {
-    requestingUserID?: Discord.Snowflake;
-    messageID?: Discord.Snowflake;
-    command?: string;
-    progress?: () => number;
+    requestingUserID: Discord.Snowflake;
+    messageID: Discord.Snowflake;
+    command: string;
+    progress: () => string;
 }
 
 type TimestampedService = Service & { timestamp: number };
@@ -96,9 +96,9 @@ class MonitoringServicex {
 
     private format = (kvp: [string, (TimestampedService | SuccessfulService | ErroredService)]) => {
         const service = kvp[1];
-        return `User ${service.requestingUserID} -- ${service.command} -- ${service.progress}` +
-        ` -- Elapsed: ${((<any>service).endTimestamp || Date.now()) - service.timestamp}` +
-        (<any>service).error && ` -- Error: ${(<any>service).error}`;
+        return `User ${service.requestingUserID} -- ${service.command} -- ${service.progress()}` +
+        ` -- Elapsed: ${new Date(((<any>service).endTimestamp || Date.now()) - service.timestamp).toTimeString()}` +
+        ((<any>service).error ? ` -- Error: ${(<any>service).error}` : "");
     }
 
     private toFlatArray<K, V>(map: Map<K, V[]>): [K, V][] {

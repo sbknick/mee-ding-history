@@ -22,7 +22,7 @@ export class DeepSearch {
     private progress = {
         total: 0,
         done: 0,
-        calc: () => Math.floor(100 * this.progress.done / this.progress.total),
+        calc: () => `${this.progress.done}/${this.progress.total} (${ Math.floor(100 * this.progress.done / this.progress.total)}%)`,
 
         register: () => MonitoringService.registerService({
             command: this.msg.cleanContent,
@@ -33,7 +33,9 @@ export class DeepSearch {
 
         error: (error: string) => {},
 
-        success: () => {},
+        success: () => {
+            this.progress.done = this.progress.total;
+        },
     };
 
     async doSearch(userID: string): Promise<Discord.Message> {
@@ -47,7 +49,8 @@ export class DeepSearch {
         const channels = this.getGuildTextChannels();
 
         for (const channel of channels) {
-            // channel.messages.size
+            this.progress.total += channel.messages.size;
+
             if (cancelled) break;
             let before: string = undefined;
             let keepGoing: boolean = true;
@@ -67,6 +70,10 @@ export class DeepSearch {
                     break;
                 }
             }
+        }
+
+        if (foundMessage) {
+            this.progress.done = this.progress.total;
         }
 
         return foundMessage;
