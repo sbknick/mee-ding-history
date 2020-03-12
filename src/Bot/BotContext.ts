@@ -52,7 +52,7 @@ export class BotContext {
 
     readonly fetch = {
         deepSearch: (level: string) =>
-            new DeepSearch(this, this.msg.source.guild, this.termHandler.getTerm(), level),
+            new DeepSearch(this, this.msg.source, this.termHandler.getTerm(), level),
 
         getUserLevel: (member: Discord.GuildMember) =>
             new MemberLevelSearch(this, member, this.termHandler.getTerm()),

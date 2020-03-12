@@ -3,6 +3,7 @@ import Discord, { TextChannel } from "discord.js";
 import { logger } from "../Logger";
 
 import { BotContext } from ".";
+import { MonitoringService } from "../Services/MonitoringService";
 
 
 // [ matchedMessages, shouldSearchMore, oldestMessageID ]
@@ -14,13 +15,32 @@ export class DeepSearch {
 
     constructor(
         private ctx: BotContext,
-        private guild: Discord.Guild,
+        private msg: Discord.Message,
+        // private guild: Discord.Guild,
         private searchTerm: string,
         private level: string
     ) {}
 
+    private progress = {
+        total: 0,
+        done: 0,
+        calc: () => Math.floor(100 * this.progress.done / this.progress.total),
+
+        register: () => MonitoringService.registerService({
+            command: this.msg.cleanContent,
+            messageID: this.msg.id,
+            requestingUserID: this.msg.author.id,
+            progress: this.progress.calc,
+        }, this.msg.guild.id),
+
+        error: (error: string) => {},
+
+        success: () => {},
+    };
+
     async doSearch(userID: string): Promise<Discord.Message> {
         logger.info(`Starting user-requested deepSearch for userID: ${userID}`);
+        this.progress.register();
 
         let cancelled = false;
         let foundMessage: Discord.Message;
@@ -55,7 +75,7 @@ export class DeepSearch {
     }
 
     private getGuildTextChannels() {
-        const channels = this.guild.channels.filter(ch => ch.type == "text");
+        const channels = this.msg.guild.channels.filter(ch => ch.type == "text");
         return channels.map(ch => <TextChannel>ch);
     }
 
