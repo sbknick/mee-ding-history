@@ -1,5 +1,11 @@
 import Discord from "discord.js";
+import moment from "moment";
 
+
+/// This is a bit haxy, but it works to add .format() to moment.Duration...
+function format(duration: moment.Duration, format: string) {
+    return moment.utc(duration.asMilliseconds()).format(format);
+}
 
 interface Service {
     requestingUserID: Discord.Snowflake;
@@ -8,8 +14,8 @@ interface Service {
     progress: () => string;
 }
 
-type TimestampedService = Service & { timestamp: number };
-type SuccessfulService = TimestampedService & { endTimestamp: number };
+type TimestampedService = Service & { timestamp: moment.Moment };
+type SuccessfulService = TimestampedService & { endTimestamp: moment.Moment };
 type ErroredService = SuccessfulService & { error: string };
 
 class MonitoringServicex {
@@ -20,7 +26,7 @@ class MonitoringServicex {
 
     registerService(service: Service, guildID: Discord.Snowflake) {
         const serviceList = this.getServices(guildID);
-        serviceList.push({ ...service, timestamp: Date.now() });
+        serviceList.push({ ...service, timestamp: moment() });
     }
 
     serviceFinished(service: Service, guildID: Discord.Snowflake, error?: string) {
@@ -33,7 +39,7 @@ class MonitoringServicex {
 
         const finishedService = {
             ...svcs[0],
-            endTimestamp: Date.now(),
+            endTimestamp: moment(),
         };
 
         if (error) {
@@ -96,9 +102,24 @@ class MonitoringServicex {
 
     private format = (kvp: [string, (TimestampedService | SuccessfulService | ErroredService)]) => {
         const service = kvp[1];
-        return `User ${service.requestingUserID} -- ${service.command} -- ${service.progress()}` +
-        ` -- Elapsed: ${new Date(((<any>service).endTimestamp || Date.now()) - service.timestamp).toTimeString()}` +
+        const elapsedTime = this.getElapsedTime(service.timestamp, (<SuccessfulService>service).endTimestamp || moment());
+        return `    User ${service.requestingUserID} -- ${service.command} -- ${service.progress()} -- Elapsed: ${elapsedTime}` +
         ((<any>service).error ? ` -- Error: ${(<any>service).error}` : "");
+    }
+
+    private getElapsedTime(m1: moment.Moment, m2: moment.Moment): string {
+        const end = m1 > m2 ? m1 : m2;
+        const start = m1 > m2 ? m2 : m1;
+        const duration = moment.duration(end.diff(start));
+
+        let fmat = "ss.SSS";
+        if (duration.asSeconds() > 60) {
+            fmat = "mm:" + fmat;
+        }
+        if (duration.asMinutes() > 60) {
+            fmat = "hh:" + fmat;
+        }
+        return format(duration, fmat);
     }
 
     private toFlatArray<K, V>(map: Map<K, V[]>): [K, V][] {
