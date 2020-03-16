@@ -1,4 +1,4 @@
-import { Bot } from "../Bot";
+import { Bot, BotContext } from "../Bot";
 import { DingRouter } from "./DingRouter";
 import { logger } from "../Logger";
 import { Message } from "../Models/Message";
@@ -33,26 +33,11 @@ export class MessageRouter implements Router {
                     const cmd = args[0];
                     args = args.slice(1);
 
-                    switch (cmd) {
-                        // !ding
-                        case "ding":
-                            if (args.length == 0 || args[0] == "help")
-                                return ctx.helpHandler().help();
-
-                            if (!msg.source.guild) {
-                                if (Common.isDeveloper(msg.userID) && args[0] === "report") {
-                                    await ctx.reportHandler().report();
-                                    if (args.length > 1 && (args[1] === "-c" || args[1] === "--clear")) {
-                                        await ctx.reportHandler().clear(args);
-                                    }
-                                    return;
-                                }
-                                else {
-                                    return await msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
-                                }
-                            }
-
-                            await this.dingRouter.route(msg, args);
+                    if (!msg.source.guild) {
+                        await this.routeDM(ctx, cmd, msg, args);
+                    }
+                    else {
+                        await this.routeGuildMessage(ctx, cmd, msg, args);
                     }
                 }
             }
@@ -63,4 +48,31 @@ export class MessageRouter implements Router {
                 ctx.memoryHandler().remember(msg);
             }
         });
+        
+    private async routeDM(ctx: BotContext, cmd: string, msg: Message, args: string[]) {
+        switch (cmd) {
+            case "report":
+                if (Common.isDeveloper(msg.userID)) {
+                    await ctx.reportHandler().report();
+                    if (args.length > 1 && (args[1] === "-c" || args[1] === "--clear")) {
+                        await ctx.reportHandler().clear(args);
+                    }
+                    return;
+                }
+            
+            default:
+                return await msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
+        }
+    }
+
+    private async routeGuildMessage(ctx: BotContext, cmd: string, msg: Message,  args: string[]) {
+        switch (cmd) {
+            // !ding
+            case "ding":
+                if (args.length == 0 || args[0] == "help")
+                    return ctx.helpHandler().help();
+
+                await this.dingRouter.route(msg, args);
+        }
+    }
 }
