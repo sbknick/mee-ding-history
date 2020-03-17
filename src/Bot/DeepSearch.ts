@@ -1,10 +1,9 @@
 import Discord, { TextChannel } from "discord.js";
 
-import { logger } from "../Logger";
-
 import { BotContext } from ".";
-import { MonitoringService } from "../Services/MonitoringService";
 import { Common } from "../Common";
+import { logger } from "../Logger";
+import { MonitoringService } from "../Services/MonitoringService";
 
 
 //                        [ matchedMessages, shouldSearchMore, oldestMessageID ]
@@ -14,7 +13,6 @@ export class DeepSearch {
     constructor(
         private ctx: BotContext,
         private msg: Discord.Message,
-        // private guild: Discord.Guild,
         private searchTerm: string,
         private level: string
     ) {}
@@ -23,25 +21,27 @@ export class DeepSearch {
         total: 0,
         done: 0,
         calc: () => `${this.progress.done}/${this.progress.total} (${ Math.floor(100 * this.progress.done / this.progress.total)}%)`,
-
-        register: () => MonitoringService.registerService({
-            command: this.msg.cleanContent,
-            messageID: this.msg.id,
-            requestingUserID: this.msg.author.id,
-            progress: this.progress.calc,
-        }, this.msg.guild.id),
-
-        error: (error: string) => {},
-
-        success: () => {
-            this.progress.done = this.progress.total;
-        },
     };
 
     async doSearch(userID: string): Promise<Discord.Message> {
         logger.info(`Starting user-requested deepSearch for userID: ${userID}`);
-        this.progress.register();
+        const service = MonitoringService.createService(this.msg, DeepSearch.name, this.progress.calc);
 
+        let message: Discord.Message;
+        try {
+            message = await this.doSearchInternal(userID);
+            service.finished();
+            return message;
+        }
+        catch (err) {
+            if (err instanceof Error) {
+                service.finished(err.message);
+            }
+            throw err;
+        }
+    }
+
+    private async doSearchInternal(userID: string): Promise<Discord.Message> {
         let cancelled = false;
         let foundMessage: Discord.Message;
         let messages: Discord.Message[];
@@ -72,10 +72,6 @@ export class DeepSearch {
             }
         }
 
-        if (foundMessage) {
-            this.progress.done = this.progress.total;
-        }
-
         return foundMessage;
     }
 
@@ -92,6 +88,8 @@ export class DeepSearch {
 
         const keepGoing = messages.size > 0;
         const newBefore = keepGoing && this.oldest(messages.array()).id;
+
+        this.progress.done += messages.size;
 
         return [
             messages.filter(this.messageFilter(userID)).map(m => m),

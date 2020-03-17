@@ -1,4 +1,4 @@
-import Discord from "discord.js";
+import Discord, { Message } from "discord.js";
 import moment from "moment";
 
 
@@ -7,14 +7,27 @@ function format(duration: moment.Duration, format: string) {
     return moment.utc(duration.asMilliseconds()).format(format);
 }
 
-interface Service {
+interface ServiceModel {
     requestingUserID: Discord.Snowflake;
+    guildID: Discord.Snowflake;
     messageID: Discord.Snowflake;
     command: string;
+    name: string;
     progress: () => string;
 }
 
-type TimestampedService = Service & { timestamp: moment.Moment };
+class Service {
+    constructor(
+        private serviceModel: ServiceModel,
+        private finishedDelegate: (serviceModel: ServiceModel, error?: string) => void,
+    ) {}
+
+    finished(error?: string) {
+        this.finishedDelegate(this.serviceModel, error);
+    }
+}
+
+type TimestampedService = ServiceModel & { timestamp: moment.Moment };
 type SuccessfulService = TimestampedService & { endTimestamp: moment.Moment };
 type ErroredService = SuccessfulService & { error: string };
 
@@ -24,32 +37,69 @@ class MonitoringServicex {
     private readonly successfulServices = new Map<Discord.Snowflake, SuccessfulService[]>();
     private readonly erroredServices = new Map<Discord.Snowflake, ErroredService[]>();
 
-    registerService(service: Service, guildID: Discord.Snowflake) {
-        const serviceList = this.getServices(guildID);
-        serviceList.push({ ...service, timestamp: moment() });
+    constructor() {
+        // const serviceList = this.getServices("guildID");
+
+        // serviceList.push({
+        //     command: "!ding me 1",
+        //     messageID: "1",
+        //     requestingUserID: "11",
+        //     timestamp: moment().add(-20, "seconds"),
+        //     progress: () => "AN AMOUNT"
+        // }, {
+        //     command: "!ding user <@1232131231>",
+        //     messageID: "2",
+        //     requestingUserID: "11",
+        //     timestamp: moment().add(-15, "minutes"),
+        //     progress: () => "7."
+        // });
+
+        // const successServiceList = this.getSuccessfulServices("guildID");
+
+        // successServiceList.push({
+        //     command: "shrug",
+        //     messageID: "3",
+        //     requestingUserID: "nah",
+        //     timestamp: moment().add(-2, "hours"),
+        //     endTimestamp: moment().add(-1, "hours").add(-10, "minutes"),
+        //     progress: () => ">.>"
+        // });
+        
+        // const errorServiceList = this.getErroredServices("guildID");
+
+        // errorServiceList.push({
+        //     command: "!ding me 1",
+        //     messageID: "1",
+        //     requestingUserID: "11",
+        //     timestamp: moment().add(-20, "seconds"),
+        //     endTimestamp: moment(),
+        //     error: "is an error",
+        //     progress: () => "AN AMOUNT"
+        // }, {
+        //     command: "!ding user <@1232131231>",
+        //     messageID: "2",
+        //     requestingUserID: "11",
+        //     timestamp: moment().add(-15, "minutes"),
+        //     endTimestamp: moment(),
+        //     error: "also a err",
+        //     progress: () => "7."
+        // });
+
     }
 
-    serviceFinished(service: Service, guildID: Discord.Snowflake, error?: string) {
-        const serviceList = this.getServices(guildID);
-        const registeredServiceIdx = serviceList.findIndex(s => s.messageID === service.messageID);
-
-        if (registeredServiceIdx === -1) return;
-
-        const svcs = serviceList.splice(registeredServiceIdx, 1);
-
-        const finishedService = {
-            ...svcs[0],
-            endTimestamp: moment(),
+    createService(msg: Message, name: string, progressDelegate: () => string): Service {
+        const serviceModel: ServiceModel = {
+            name,
+            command: msg.cleanContent,
+            messageID: msg.id,
+            guildID: (msg.guild ? msg.guild.id : undefined),
+            requestingUserID: msg.author.id,
+            progress: progressDelegate,
         };
 
-        if (error) {
-            const errors = this.getErroredServices(guildID);
-            errors.push({ ...finishedService, error });
-        }
-        else {
-            const successes = this.getSuccessfulServices(guildID);
-            successes.push(finishedService);
-        }
+        this.registerService(serviceModel);
+
+        return new Service(serviceModel, this.serviceFinished);
     }
 
     generateReport() {
@@ -100,10 +150,38 @@ class MonitoringServicex {
         this.erroredServices.clear();
     }
 
+    private serviceFinished = (service: ServiceModel, error?: string) => {
+        const serviceList = this.getServices(service.guildID);
+        const registeredServiceIdx = serviceList.findIndex(s => s.messageID === service.messageID);
+
+        if (registeredServiceIdx === -1) return;
+
+        const svcs = serviceList.splice(registeredServiceIdx, 1);
+
+        const finishedService = {
+            ...svcs[0],
+            endTimestamp: moment(),
+        };
+
+        if (error) {
+            const errors = this.getErroredServices(service.guildID);
+            errors.push({ ...finishedService, error });
+        }
+        else {
+            const successes = this.getSuccessfulServices(service.guildID);
+            successes.push(finishedService);
+        }
+    }
+
+    private registerService(service: ServiceModel) {
+        const serviceList = this.getServices(service.guildID);
+        serviceList.push({ ...service, timestamp: moment() });
+    }
+
     private format = (kvp: [string, (TimestampedService | SuccessfulService | ErroredService)]) => {
         const service = kvp[1];
         const elapsedTime = this.getElapsedTime(service.timestamp, (<SuccessfulService>service).endTimestamp || moment());
-        return `    User ${service.requestingUserID} -- ${service.command} -- ${service.progress()} -- Elapsed: ${elapsedTime}` +
+        return `    User ${service.requestingUserID} -- ${service.command} -- ${service.name} -- ${service.progress()} -- Elapsed: ${elapsedTime}` +
         ((<any>service).error ? ` -- Error: ${(<any>service).error}` : "");
     }
 

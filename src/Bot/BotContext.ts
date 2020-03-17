@@ -60,7 +60,7 @@ export class BotContext {
             new DeepSearch(this, this.msg.source, this.termHandler().getTerm(), level),
 
         getUserLevel: (member: Discord.GuildMember) =>
-            new MemberLevelSearch(this, member, this.termHandler().getTerm()),
+            new MemberLevelSearch(this, this.msg.source, member, this.termHandler().getTerm()),
     }
     
     private readonly respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });
