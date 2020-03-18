@@ -41,21 +41,6 @@ export class DeepSearch {
     }
 
     private async doSearchInternal(userID: string): Promise<Discord.Message> {
-        const results = await this.ctx.member.guild.search({
-            author: this.ctx.mee6UserID,
-            mentions: userID,
-            content: this.level
-        })
-
-        if (results.totalResults === 1) {
-            const prev = await this.fetchPreviousMessage(results[0]);
-
-            return prev;
-        }
-    }
-
-
-    private async doSearchInternal2(userID: string): Promise<Discord.Message> {
         let cancelled = false;
         let foundMessage: Discord.Message;
         let messages: Discord.Message[];
