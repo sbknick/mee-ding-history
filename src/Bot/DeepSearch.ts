@@ -18,9 +18,8 @@ export class DeepSearch {
     ) {}
 
     private progress = {
-        total: 0,
         done: 0,
-        calc: () => `${this.progress.done}/${this.progress.total} (${ Math.floor(100 * this.progress.done / this.progress.total)}%)`,
+        calc: () => this.progress.done.toString(),
     };
 
     async doSearch(userID: string): Promise<Discord.Message> {
@@ -64,8 +63,6 @@ export class DeepSearch {
         const channels = this.getGuildTextChannels();
 
         for (const channel of channels) {
-            this.progress.total += channel.messages.size;
-
             if (cancelled) break;
             let before: string = undefined;
             let keepGoing: boolean = true;
