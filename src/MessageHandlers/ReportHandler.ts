@@ -9,11 +9,11 @@ export class ReportHandler {
 
     async report() {
         const report = MonitoringService.generateReport();
-        this.ctx.send.reply(report);
+        await this.ctx.send.batchReply(report);
     }
 
     async clear(args: string[]) {
         MonitoringService.clear(args);
-        this.ctx.send.reply("Cleared.");
+        await this.ctx.send.reply("Cleared.");
     }
 }

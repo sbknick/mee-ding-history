@@ -77,7 +77,7 @@ class DingRouterContext {
         let searchResult = await this.ctx.fetch.deepSearch(level).doSearch(member.user.id);
 
         if (searchResult) {
-            this.ctx.send.replyEmbed(searchResult, level);
+            this.ctx.send.replyDingMessageEmbed(searchResult, level);
         }
         else {
             this.ctx.send.replySorry();

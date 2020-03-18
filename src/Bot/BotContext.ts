@@ -1,4 +1,4 @@
-import Discord from "discord.js";
+import Discord, { TextChannel, DMChannel } from "discord.js";
 
 import { HelpHandler, MemoryHandler, ReportHandler, TermHandler } from "../MessageHandlers";
 import { Message } from "../Models/Message";
@@ -41,10 +41,10 @@ export class BotContext {
 
         replySorry: () => this.send.reply(` sorry, I can't find that. :(`),
 
-        replyEmbed: (msg: Discord.Message, level: string) => {
+        replyDingMessageEmbed: (msg: Discord.Message, level: string) => {
             const embed = new Discord.RichEmbed()
                 .setColor(0x42b983)
-                .setAuthor(msg.guild.member(msg.author).displayName)
+                .setAuthor(msg.guild.member(msg.author).displayName, msg.author.displayAvatarURL)
                 .setTitle(`Level ${level}`)
                 .setDescription(msg.content)
                 .addField('\u200b', `[Jump to...](${msg.url})`)
@@ -52,6 +52,14 @@ export class BotContext {
                 .setFooter(`Brought to you by Blair`);
 
             this.respondWithoutQuote(embed);
+        },
+
+        replyEmbed: (embed: Discord.RichEmbed) => this.msg.source.reply(embed),
+
+        batchReply: async (content: (string | Discord.RichEmbed)[]) => {
+            for (const x of content) {
+                await this.msg.source.reply(x);
+            }
         },
     }
 

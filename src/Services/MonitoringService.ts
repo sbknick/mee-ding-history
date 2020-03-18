@@ -1,4 +1,4 @@
-import Discord, { Message } from "discord.js";
+import Discord, { Message, ColorResolvable } from "discord.js";
 import moment from "moment";
 
 
@@ -8,7 +8,7 @@ function format(duration: moment.Duration, format: string) {
 }
 
 interface ServiceModel {
-    requestingUserID: Discord.Snowflake;
+    username: string;
     guildID: Discord.Snowflake;
     messageID: Discord.Snowflake;
     command: string;
@@ -37,63 +37,13 @@ class MonitoringServicex {
     private readonly successfulServices = new Map<Discord.Snowflake, SuccessfulService[]>();
     private readonly erroredServices = new Map<Discord.Snowflake, ErroredService[]>();
 
-    constructor() {
-        // const serviceList = this.getServices("guildID");
-
-        // serviceList.push({
-        //     command: "!ding me 1",
-        //     messageID: "1",
-        //     requestingUserID: "11",
-        //     timestamp: moment().add(-20, "seconds"),
-        //     progress: () => "AN AMOUNT"
-        // }, {
-        //     command: "!ding user <@1232131231>",
-        //     messageID: "2",
-        //     requestingUserID: "11",
-        //     timestamp: moment().add(-15, "minutes"),
-        //     progress: () => "7."
-        // });
-
-        // const successServiceList = this.getSuccessfulServices("guildID");
-
-        // successServiceList.push({
-        //     command: "shrug",
-        //     messageID: "3",
-        //     requestingUserID: "nah",
-        //     timestamp: moment().add(-2, "hours"),
-        //     endTimestamp: moment().add(-1, "hours").add(-10, "minutes"),
-        //     progress: () => ">.>"
-        // });
-        
-        // const errorServiceList = this.getErroredServices("guildID");
-
-        // errorServiceList.push({
-        //     command: "!ding me 1",
-        //     messageID: "1",
-        //     requestingUserID: "11",
-        //     timestamp: moment().add(-20, "seconds"),
-        //     endTimestamp: moment(),
-        //     error: "is an error",
-        //     progress: () => "AN AMOUNT"
-        // }, {
-        //     command: "!ding user <@1232131231>",
-        //     messageID: "2",
-        //     requestingUserID: "11",
-        //     timestamp: moment().add(-15, "minutes"),
-        //     endTimestamp: moment(),
-        //     error: "also a err",
-        //     progress: () => "7."
-        // });
-
-    }
-
     createService(msg: Message, name: string, progressDelegate: () => string): Service {
         const serviceModel: ServiceModel = {
             name,
             command: msg.cleanContent,
             messageID: msg.id,
             guildID: (msg.guild ? msg.guild.id : undefined),
-            requestingUserID: msg.author.id,
+            username: msg.member.displayName,
             progress: progressDelegate,
         };
 
@@ -102,43 +52,25 @@ class MonitoringServicex {
         return new Service(serviceModel, this.serviceFinished);
     }
 
-    generateReport() {
-        const running = () => {
-            const servs = this.toFlatArray(this.runningServices);
-
-            return [
-                "Running requests:",
-                ...(servs.length > 0 ? servs.map(this.format) : [ "None" ])
-            ];
-        }
-
-        const successful = () => {
-            const servs = this.toFlatArray(this.successfulServices);
-
-            return [
-                "",
-                "Successful requests:",
-                ...(servs.length > 0 ? servs.map(this.format) : [ "None" ])
-            ];
-        }
-
-        const errors = () => {
-            const errs = this.toFlatArray(this.erroredServices);
-
-            if (errors.length === 0) return [];
-
-            return [
-                "",
-                "Errored requests:",
-                ...errs.map(this.format)
-            ];
-        };
+    generateReport(): (string | Discord.RichEmbed)[] {
+        const embeds: (string | Discord.RichEmbed)[] = [];
         
-        return [
-            ...running(),
-            ...successful(),
-            ...errors(),
-        ].join("\n");
+        let services = this.toFlatArray(this.runningServices);
+        if (services.length > 0) {
+            embeds.push("**Running Services:**", ...this.formatEmbeds(services, "BLUE"));
+        }
+
+        services = this.toFlatArray(this.successfulServices);
+        if (this.successfulServices.size > 0) {
+            embeds.push("**Successful Services:**", ...this.formatEmbeds(services, "GREEN"));
+        }
+
+        services = this.toFlatArray(this.erroredServices);
+        if (this.erroredServices.size > 0) {
+            embeds.push("**Errored Services:**", ...this.formatEmbeds(services, "RED"));
+        }
+
+        return embeds.concat("Report's Done.");
     }
 
     clear(args: string[]) {
@@ -151,7 +83,7 @@ class MonitoringServicex {
     }
 
     private serviceFinished = (service: ServiceModel, error?: string) => {
-        const serviceList = this.getServices(service.guildID);
+        const serviceList = this.getRunningServices(service.guildID);
         const registeredServiceIdx = serviceList.findIndex(s => s.messageID === service.messageID);
 
         if (registeredServiceIdx === -1) return;
@@ -174,15 +106,31 @@ class MonitoringServicex {
     }
 
     private registerService(service: ServiceModel) {
-        const serviceList = this.getServices(service.guildID);
+        const serviceList = this.getRunningServices(service.guildID);
         serviceList.push({ ...service, timestamp: moment() });
     }
 
-    private format = (kvp: [string, (TimestampedService | SuccessfulService | ErroredService)]) => {
-        const service = kvp[1];
-        const elapsedTime = this.getElapsedTime(service.timestamp, (<SuccessfulService>service).endTimestamp || moment());
-        return `    User ${service.requestingUserID} -- ${service.command} -- ${service.name} -- ${service.progress()} -- Elapsed: ${elapsedTime}` +
-        ((<any>service).error ? ` -- Error: ${(<any>service).error}` : "");
+    private formatEmbeds(services: [string, TimestampedService][], color: ColorResolvable): Discord.RichEmbed[] {
+        return services
+            .map(kvp => ({
+                service: kvp[1],
+                elapsedTime: this.getElapsedTime(kvp[1].timestamp, (<SuccessfulService>kvp[1]).endTimestamp || moment()) 
+            }))
+            .map(({ service, elapsedTime }) => ({
+                service,
+                embed: new Discord.RichEmbed()
+                    .setColor(color)
+                    .setTitle(service.name)
+                    .addField("Cmd", service.command, true)
+                    .addField("User", service.username, true)
+                    .addBlankField(true)
+                    .addField("Progress", service.progress(), true)
+                    .addField("Time Elapsed", elapsedTime, true)
+            }))
+            .map(({ service, embed }) =>
+                (<any>service).error
+                    ? embed.addField("Error", (<any>service).error)
+                    : embed);
     }
 
     private getElapsedTime(m1: moment.Moment, m2: moment.Moment): string {
@@ -210,7 +158,7 @@ class MonitoringServicex {
         return out;
     }
 
-    private getServices = (guildID: Discord.Snowflake) => this.getListFrom(this.runningServices, guildID);
+    private getRunningServices = (guildID: Discord.Snowflake) => this.getListFrom(this.runningServices, guildID);
     private getSuccessfulServices = (guildID: Discord.Snowflake) => this.getListFrom(this.successfulServices, guildID) as SuccessfulService[];
     private getErroredServices = (guildID: Discord.Snowflake) => this.getListFrom(this.erroredServices, guildID) as ErroredService[];
 

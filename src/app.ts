@@ -4,7 +4,7 @@ import auth from "./auth.json";
 
 import { Bot } from "./Bot";
 import { Convert } from "./Convert";
-import { MessageRouter } from "./MessageRouter";
+import { MessageRouter } from "./Routers/MessageRouter";
 import { logger } from "./Logger";
 
 

@@ -52,12 +52,18 @@ export class MessageRouter implements Router {
     private async routeDM(ctx: BotContext, cmd: string, msg: Message, args: string[]) {
         switch (cmd) {
             case "report":
+            case "sitrep":
                 if (Common.isDeveloper(msg.userID)) {
                     await ctx.reportHandler().report();
-                    if (args.length > 1 && (args[1] === "-c" || args[1] === "--clear")) {
+                    if (args.length > 0 && (args.includes("-c") || args.includes("--clear"))) {
                         await ctx.reportHandler().clear(args);
                     }
                     return;
+                }
+            
+            case "clear":
+                if (Common.isDeveloper(msg.userID)) {
+                    return await ctx.reportHandler().clear(args);
                 }
             
             default:
@@ -72,7 +78,7 @@ export class MessageRouter implements Router {
                 if (args.length == 0 || args[0] == "help")
                     return ctx.helpHandler().help();
 
-                await this.dingRouter.route(msg, args);
+                return await this.dingRouter.route(msg, args);
         }
     }
 }
