@@ -79,6 +79,21 @@ export class MessageRouter implements Router {
                     return ctx.helpHandler().help();
 
                 return await this.dingRouter.route(msg, args);
+
+            case "report":
+            case "sitrep":
+                if (Common.isDeveloper(msg.userID)) {
+                    await ctx.reportHandler().report();
+                    if (args.length > 0 && (args.includes("-c") || args.includes("--clear"))) {
+                        await ctx.reportHandler().clear(args);
+                    }
+                    return;
+                }
+            
+            case "clear":
+                if (Common.isDeveloper(msg.userID)) {
+                    return await ctx.reportHandler().clear(args);
+                }
         }
     }
 }
