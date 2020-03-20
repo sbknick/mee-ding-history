@@ -43,6 +43,7 @@ export class FullScan {
 
     private async doScanInternal() {
         await this.forEachAsync(this.bot.guilds.array(), async guild => {
+            logger.info(`Scanning guild: ` + guild.name);
             const guildSearchTerm = TermHandler.getTermForGuild(guild);
             const channels = guild.channels.filter(ch => ch.type === "text" && ch.permissionsFor(this.bot.user).has("READ_MESSAGE_HISTORY")).array();
 
@@ -56,6 +57,7 @@ export class FullScan {
         let messages: Discord.Collection<string, Discord.Message>;
         let before: Discord.Snowflake;
 
+        logger.info(`Scanning channel: ${channel.guild.name}/${channel.name}`);
         do {
             try {
                 messages = await channel.fetchMessages({
