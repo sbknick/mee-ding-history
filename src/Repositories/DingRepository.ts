@@ -33,13 +33,13 @@ class DingRepositoryx {
     }
 
     async thething() {
-        const output: string[] = [];
+        const output: Ding[] = [];
         for (const key of this.stored) {
             const dingRecord = await this.redis.hgetall(key);
-            output.push(JSON.stringify(dingRecord));
+            output.push(this.toDing(dingRecord));
         }
 
-        return output.join("\n");
+        return output;
     }
 
     private setupRedisMonitoring() {

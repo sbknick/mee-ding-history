@@ -68,7 +68,7 @@ export class MessageRouter implements Router {
 
             case "found":
                 if (Common.isDeveloper(msg.userID)) {
-                    return await ctx.reportHandler().found();
+                    return await ctx.reportHandler().found(args);
                 }
             
             default:

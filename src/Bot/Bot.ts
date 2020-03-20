@@ -12,7 +12,7 @@ export class Bot {
     private ctx: BotContext;
 
     constructor(
-        private client: Discord.Client
+        public client: Discord.Client
     ) {
         this.client.on("ready", async () => {
             this.client.user.setUsername("Ding-Bot");

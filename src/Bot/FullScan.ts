@@ -1,4 +1,4 @@
-import Discord, { TextChannel } from "discord.js";
+import Discord, { TextChannel, Message, Channel } from "discord.js";
 
 import { logger } from "../Logger";
 import { MonitoringService } from "../Services/MonitoringService";
@@ -85,12 +85,9 @@ export class FullScan {
     private async scanMessages(messages: Discord.Message[]) {
         for (const message of messages) {
             const level = Common.extractNumber(message.cleanContent);
-            const prev = (await message.channel.fetchMessages({
-                limit: 1,
-                before: message.id
-            })).first();
+            const prev = await this.fetchDingMessage(<TextChannel>message.channel, message.id, message.mentions.members.first().id);
 
-            if (message.mentions.members.first().id !== prev.author.id) throw new Error();
+            // if (message.mentions.members.first().id !== prev.author.id) throw new Error("message author mismatch");
 
             DingRepository.add({
                 userID: prev.author.id,
@@ -100,6 +97,14 @@ export class FullScan {
                 messageID: prev.id,
             });
         }
+    }
+
+    private async fetchDingMessage(channel: Discord.TextChannel, before: Discord.Snowflake, authorID: Discord.Snowflake) {
+        const messages = await channel.fetchMessages({
+            limit: 10,
+            before
+        });
+        return messages.find(m => m.author.id === authorID);
     }
 
     private async forEachAsync<T, V>(items: T[], asyncFunc: (item: T) => Promise<V>) {

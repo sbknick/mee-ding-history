@@ -20,7 +20,7 @@ export class BotContext {
     private _termHandler: TermHandler;
 
     constructor(
-        bot: Bot,
+        private bot: Bot,
         private msg: Message
     ) {
         this.mee6UserID = bot.mee6UserID();
@@ -31,7 +31,7 @@ export class BotContext {
 
     readonly helpHandler = () => this._helpHandler || (this._helpHandler = new HelpHandler(this));
     readonly memoryHandler = () => this._memoryHandler || (this._memoryHandler = new MemoryHandler(this));
-    readonly reportHandler = () => this._reportHandler || (this._reportHandler = new ReportHandler(this));
+    readonly reportHandler = () => this._reportHandler || (this._reportHandler = new ReportHandler(this, this.bot.client));
     readonly termHandler = () => this._termHandler || (this._termHandler = new TermHandler(this));
 
     readonly send = {
