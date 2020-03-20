@@ -7,6 +7,7 @@ import { logger } from "../Logger";
 
 class DingRepositoryx {
     private readonly redis: Redis.Redis;
+    private readonly stored: string[] = [];
 
     constructor() {
         this.redis = new Redis(process.env.REDIS_URL);
@@ -22,12 +23,23 @@ class DingRepositoryx {
             .hmset(key, ding)
             // .expire(key, Common.memoryThreshold)
             .exec();
+        this.stored.push(key);
     }
 
     async get(guildID: Discord.Snowflake, userID: Discord.Snowflake, level: string) {
         const key = this.getKey(guildID, userID, level);
         const dingRecord = await this.redis.hgetall(key);
         return this.toDing(dingRecord);
+    }
+
+    async thething() {
+        const output: string[] = [];
+        for (const key of this.stored) {
+            const dingRecord = await this.redis.hgetall(key);
+            output.push(JSON.stringify(dingRecord));
+        }
+
+        return output.join("\n");
     }
 
     private setupRedisMonitoring() {

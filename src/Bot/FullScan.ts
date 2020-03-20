@@ -24,16 +24,18 @@ export class FullScan {
     };
 
     async doScan() {
-        logger.info(`Starting full scan of guilds`);
+        logger.info(`Starting full scan of guilds.`);
         const service = MonitoringService.createService(undefined, FullScan.name, this.progress.calc);
 
         try {
             await this.doScanInternal();
             service.finished();
+            logger.info(`Full scan of guilds completed.`);
         }
         catch (err) {
             if (err instanceof Error) {
                 service.finished(err.message);
+                logger.info(`Full scan of guilds errored.`);
             }
             throw err;
         }
@@ -42,7 +44,7 @@ export class FullScan {
     private async doScanInternal() {
         await this.forEachAsync(this.bot.guilds.array(), async guild => {
             const guildSearchTerm = TermHandler.getTermForGuild(guild);
-            const channels = guild.channels.filterArray(ch => ch.type === "text" && ch.permissionsFor(this.bot.user).hasPermission("READ_MESSAGE_HISTORY"));
+            const channels = guild.channels.filter(ch => ch.type === "text" && ch.permissionsFor(this.bot.user).has("READ_MESSAGE_HISTORY")).array();
 
             for (const channel of channels) {
                 await this.scanChannel(<TextChannel>channel, guildSearchTerm);
@@ -51,17 +53,27 @@ export class FullScan {
     }
 
     private async scanChannel(channel: Discord.TextChannel, searchTerm: string) {
-        let messages: Discord.Message[];
+        let messages: Discord.Collection<string, Discord.Message>;
         let before: Discord.Snowflake;
-        do {
-            messages = (await channel.fetchMessages({
-                limit: Common.searchPageSize,
-                before
-            })).array();
 
-            await this.scanMessages(messages.filter(this.messageFilter(searchTerm)));
+        do {
+            try {
+                messages = await channel.fetchMessages({
+                    limit: Common.searchPageSize,
+                    before
+                });
+            }
+            catch (err) {
+                logger.error(err.message);
+                throw err;
+            }
+
+            await this.scanMessages(messages.filter(this.messageFilter(searchTerm)).array());
+
+            if (messages.size > 0)
+                before = messages.last().id;
         }
-        while(messages.length === Common.searchPageSize);
+        while(messages.size === Common.searchPageSize);
     }
 
     private messageFilter = (searchTerm: string) =>
@@ -78,7 +90,7 @@ export class FullScan {
                 before: message.id
             })).first();
 
-            if (message.mentions.members.first().id !== prev.id) throw new Error();
+            if (message.mentions.members.first().id !== prev.author.id) throw new Error();
 
             DingRepository.add({
                 userID: prev.author.id,

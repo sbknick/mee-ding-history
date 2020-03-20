@@ -65,6 +65,11 @@ export class MessageRouter implements Router {
                 if (Common.isDeveloper(msg.userID)) {
                     return await ctx.reportHandler().clear(args);
                 }
+
+            case "found":
+                if (Common.isDeveloper(msg.userID)) {
+                    return await ctx.reportHandler().found();
+                }
             
             default:
                 return await msg.source.reply("Sorry, I don't do that in DMs. :shrug:");
