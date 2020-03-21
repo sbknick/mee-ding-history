@@ -91,13 +91,16 @@ export class FullScan {
 
             // if (message.mentions.members.first().id !== prev.author.id) throw new Error("message author mismatch");
 
-            DingRepository.add({
-                userID: prev.author.id,
-                channelID: prev.channel.id,
-                guildID: prev.guild.id,
-                level,
-                messageID: prev.id,
-            });
+            if (prev)
+                DingRepository.add({
+                    userID: prev.author.id,
+                    channelID: prev.channel.id,
+                    guildID: prev.guild.id,
+                    level,
+                    messageID: prev.id,
+                });
+            else
+                logger.error(`ding found for ${message.mentions.members.first().displayName} level ${level}, but failed to find the associated message`);
         }
     }
 
