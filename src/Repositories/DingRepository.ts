@@ -14,7 +14,8 @@ class DingRepositoryx {
 
         this.redis.connect(() => logger.info("Redis connected."));
 
-        this.setupRedisMonitoring();
+        if (process.env.MONITOR_REDIS)
+            this.setupRedisMonitoring();
     }
 
     async add(ding: Ding) {

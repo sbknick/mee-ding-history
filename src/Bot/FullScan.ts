@@ -33,10 +33,8 @@ export class FullScan {
             logger.info(`Full scan of guilds completed.`);
         }
         catch (err) {
-            if (err instanceof Error) {
-                service.finished(err.message);
-                logger.info(`Full scan of guilds errored.`);
-            }
+            service.finished(err.message || err);
+            logger.info(`Full scan of guilds errored.`);
             throw err;
         }
     }

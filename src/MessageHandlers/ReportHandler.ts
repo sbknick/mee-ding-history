@@ -33,7 +33,18 @@ export class ReportHandler {
             this.do_resolve(found);
         }
 
-        await this.ctx.send.dm(JSON.stringify(found).replace("},{", "},\r\n{"));
+        const output = JSON.stringify(found).replace("},{", "},\r\n{");
+        
+        if (output.length < 2000)
+            await this.ctx.send.dm(output);
+        else {
+            let cursor = 0;
+            while (cursor < output.length) {
+                const page = output.slice(cursor, cursor + 2000);
+                await this.ctx.send.dm(page);
+                cursor += page.length;
+            }
+        }
     }
 
     private do_resolve(dings: Ding[]) {

@@ -1,15 +1,22 @@
-import * as winston from "winston"
+// import * as winston from "winston"
+
+// class Logger {
+//     configure() {
+//         winston.remove(winston.transports.Console);
+//         winston.createLogger({
+//             level: 'debug',
+//         }).add(new winston.transports.Console());
+//     }
+
+//     error = winston.error;
+//     info = winston.info;
+// }
 
 class Logger {
-    configure() {
-        winston.remove(winston.transports.Console);
-        winston.createLogger({
-            level: 'debug',
-        }).add(new winston.transports.Console());
-    }
+    configure() {}
 
-    error = winston.error;
-    info = winston.info;
+    error = console.error;
+    info = console.log;
 }
 
 export const logger = new Logger();
