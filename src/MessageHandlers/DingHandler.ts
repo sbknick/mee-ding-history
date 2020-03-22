@@ -6,7 +6,14 @@ import { Ding } from "../Models/Ding";
 import { DingRepository } from "../Repositories/DingRepository";
 
 
+interface Job {
+    // job: DeepSearch | MemberLevelSearch;
+    cancellationToken: { cancelled: boolean };
+}
+
 export class DingHandler {
+    private static runningJobs: Job[] = [];
+
     constructor(
         private ctx: BotContext
     ) {}
@@ -20,6 +27,13 @@ export class DingHandler {
             return this.ctx.helpHandler().unknownInput(msg);
         }
         return this.exec(msg.source.mentions.members.first(), args);
+    }
+
+    cancelJobs() {
+        for (const job of DingHandler.runningJobs) {
+            job.cancellationToken.cancelled = true;
+        }
+        DingHandler.runningJobs = [];
     }
 
     private async exec(member: Discord.GuildMember, args: string[]): Promise<void> {
@@ -41,7 +55,8 @@ export class DingHandler {
 
     private async getLevel(member: Discord.GuildMember, args: string[]) {
         if (args.length == 0) {
-            return await this.ctx.fetch.getUserLevel(member).doSearch();
+            // return await this.ctx.fetch.getUserLevel(member).doSearch();
+            return await this.memberLevel(member);
         }
 
         if (!Number.isNaN(Number(args[0]))) {
@@ -50,13 +65,13 @@ export class DingHandler {
     }
 
     private async getDing(member: Discord.GuildMember, level: string): Promise<Ding> {
-        let ding = DingRepository.get(member.guild.id, member.id, level);
+        const ding = DingRepository.get(member.guild.id, member.id, level);
 
         if (ding) return ding;
 
         this.ctx.send.reply(" so I, uhh.. don't remember... I'll go try to find it.");
 
-        let searchResult = await this.ctx.fetch.deepSearch(level).doSearch(member.id);
+        const searchResult = await this.deepSearch(member.id, level);
 
         if (searchResult) {
             return {
@@ -69,4 +84,35 @@ export class DingHandler {
             };
         }
     }
+
+    private deepSearch(userID: Discord.Snowflake, level: string) {
+        const deepSearch = this.ctx.fetch.deepSearch(level);
+
+        const searchJob: Job = {
+            // job: deepSearch,
+            cancellationToken: { cancelled: false },
+        };
+
+        DingHandler.runningJobs.push(searchJob);
+        deepSearch.onComplete(() => {
+            DingHandler.runningJobs.splice(DingHandler.runningJobs.indexOf(searchJob), 1);
+        })
+
+        return deepSearch.doSearch(userID, searchJob.cancellationToken);
+    }
+
+    private memberLevel(member: Discord.GuildMember): Promise<string> {
+        const memberLevelSearch = this.ctx.fetch.getUserLevel(member);
+
+        const levelJob: Job = {
+            cancellationToken: { cancelled: false },
+        };
+
+        DingHandler.runningJobs.push(levelJob);
+        memberLevelSearch.onComplete(this.removeJob(levelJob));
+
+        return memberLevelSearch.doSearch(levelJob.cancellationToken);
+    }
+
+    private removeJob = (job: Job) => () => DingHandler.runningJobs.splice(DingHandler.runningJobs.indexOf(job), 1);
 }
