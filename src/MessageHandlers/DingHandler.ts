@@ -65,7 +65,7 @@ export class DingHandler {
     }
 
     private async getDing(member: Discord.GuildMember, level: string): Promise<Ding> {
-        const ding = DingRepository.get(member.guild.id, member.id, level);
+        const ding = await DingRepository.get(member.guild.id, member.id, level);
 
         if (ding) return ding;
 

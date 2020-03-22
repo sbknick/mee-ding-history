@@ -30,7 +30,8 @@ class DingRepositoryx {
     async get(guildID: Discord.Snowflake, userID: Discord.Snowflake, level: string) {
         const key = this.getKey(guildID, userID, level);
         const dingRecord = await this.redis.hgetall(key);
-        return this.toDing(dingRecord);
+        if (dingRecord.hasOwnProperty("userID"))
+            return this.toDing(dingRecord);
     }
 
     async thething() {

@@ -40,7 +40,7 @@ export class BotContext {
         dm: (response: string) => this.msg.source.author.send(response),
         cleanReply: (response: string) => this.msg.source.reply(response).then((m: Discord.Message) => m.delete(5 * 60 * 1000)),
 
-        replySorry: () => this.send.reply(` sorry, I can't find that. :(`),
+        replySorry: () => this.send.reply(" sorry, I can't find that. :sob:"),
 
         replyDingMessageEmbed: (msg: Discord.Message, level: string) => {
             const embed = new Discord.RichEmbed()
@@ -50,13 +50,13 @@ export class BotContext {
                 .setDescription(msg.content)
                 .addField('\u200b', `[Jump to...](${msg.url})`)
                 .setTimestamp(msg.createdTimestamp)
-                .setFooter(`Brought to you by Blair`);
+                .setFooter("Brought to you by Blair");
 
             this.respondWithoutQuote(embed);
         },
 
-        replyDingMessageEmbed2: (ding: Ding) => {
-            const msg = ding.message || this.fetch.message(ding);
+        replyDingMessageEmbed2: async (ding: Ding) => {
+            const msg = ding.message || await this.fetch.message(ding);
 
             if (msg) {
                 const embed = new Discord.RichEmbed()
@@ -66,7 +66,7 @@ export class BotContext {
                     .setDescription(msg.content)
                     .addField('\u200b', `[Jump to...](${msg.url})`)
                     .setTimestamp(msg.createdTimestamp)
-                    .setFooter(`Brought to you by Blair`);
+                    .setFooter("Brought to you by Blair");
 
                 this.respondWithoutQuote(embed);
             }
@@ -91,9 +91,10 @@ export class BotContext {
         getUserLevel: (member: Discord.GuildMember) =>
             new MemberLevelSearch(this, this.msg.source, member, this.termHandler().getTerm()),
         
-        message: (ding: Ding) =>
-            (this.msg.source.guild.channels.find(ch => ch.id === ding.channelID) as TextChannel)
-                .messages.get(ding.messageID),
+        message: (ding: Ding) => {
+            return (this.msg.source.guild.channels.get(ding.channelID) as TextChannel)
+                .fetchMessage(ding.messageID);
+        },
     }
     
     private readonly respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });

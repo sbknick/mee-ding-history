@@ -30,7 +30,7 @@ export class ReportHandler {
         found.sort(this.sortFunc);
 
         if (args.includes("resolve")) {
-            this.do_resolve(found);
+            await this.do_resolve(found);
         }
 
         const output = found.map(d => JSON.stringify(d)).join("\n");
@@ -47,20 +47,20 @@ export class ReportHandler {
         }
     }
 
-    private do_resolve(dings: Ding[]) {
+    private async do_resolve(dings: Ding[]) {
         const cachedItems = new Map<Discord.Snowflake, Item>();
-        const resolve: (ding: Ding) => (type: "guild" | "member" | "channel" | "message") => Item =
-            ding => type => {
+        const resolve: (ding: Ding) => (type: "guild" | "member" | "channel" | "message") => Promise<Item> =
+            ding => async type => {
                 const snowflake = type === "guild" ? ding.guildID :
                                   type === "member" ? ding.userID :
                                   type === "channel" ? ding.channelID :
                                   type === "message" ? ding.messageID :
                                   undefined;
                 return cachedItems.has(snowflake) ? cachedItems.get(snowflake) :
-                    cachedItems.set(snowflake, (() => {
+                    cachedItems.set(snowflake, await (async () => {
                         switch (type) {
                             case "guild":
-                                return this.client.guilds.find(g => g.id === snowflake);
+                                return this.client.guilds.get(snowflake);
                             
                             case "member":
                                 {
@@ -76,17 +76,17 @@ export class ReportHandler {
 
                             case "message": 
                                 let channel = <TextChannel>cachedItems.get(ding.channelID);
-                                return channel.messages.get(snowflake);
+                                return await channel.fetchMessage(snowflake);
                         }
                    })()).get(snowflake);
             };
 
 
         for (const ding of dings) {
-            const guild = resolve(ding)("guild") as Discord.Guild;
-            const member = resolve(ding)("member") as Discord.GuildMember;
-            const channel = resolve(ding)("channel") as Discord.TextChannel;
-            const message = resolve(ding)("message") as Discord.Message;
+            const guild = await resolve(ding)("guild") as Discord.Guild;
+            const member = await resolve(ding)("member") as Discord.GuildMember;
+            const channel = await resolve(ding)("channel") as Discord.TextChannel;
+            const message = await resolve(ding)("message") as Discord.Message;
 
             ding.guildID = guild.name;
             ding.userID = member.displayName;
