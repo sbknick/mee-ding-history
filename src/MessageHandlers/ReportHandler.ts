@@ -33,7 +33,7 @@ export class ReportHandler {
             this.do_resolve(found);
         }
 
-        const output = JSON.stringify(found).replace("},{", "},\r\n{");
+        const output = found.map(d => JSON.stringify(d)).join("\n");
         
         if (output.length < 2000)
             await this.ctx.send.dm(output);

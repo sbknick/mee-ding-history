@@ -70,6 +70,7 @@ export class FullScan {
 
             await this.scanMessages(messages.filter(this.messageFilter(searchTerm)).array());
 
+            this.progress.done += messages.size;
             if (messages.size > 0)
                 before = messages.last().id;
         }

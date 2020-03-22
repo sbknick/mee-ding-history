@@ -2,7 +2,7 @@ import Discord from "discord.js";
 
 import { Bot, BotContext } from "../Bot";
 import { Message } from "../Models/Message";
-import { TermHandler } from "../MessageHandlers";
+import { TermHandler, DingHandler } from "../MessageHandlers";
 import { Common } from "../Common";
 
 
@@ -19,10 +19,12 @@ export class DingRouter {
 
         switch (subCmd) {
             case "me":
-                return drCtx.execMe(args);
+                return new DingHandler(this.bot.getMsgContext(msg)).me(msg, args);
+                // return drCtx.execMe(args);
 
             case "user":
-                return drCtx.execUser(args.slice(1));
+                return new DingHandler(this.bot.getMsgContext(msg)).user(msg, args);
+                // return drCtx.execUser(args.slice(1));
 
             case "term":
                 if (msg.source.member.permissions.has("MANAGE_GUILD", true) || Common.isDeveloper(msg.userID))

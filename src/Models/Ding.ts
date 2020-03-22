@@ -8,4 +8,6 @@ export interface Ding {
 
     messageID: Discord.Snowflake;
     channelID: Discord.Snowflake;
+
+    message?: Discord.Message;
 }

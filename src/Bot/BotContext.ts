@@ -1,9 +1,10 @@
-import Discord, { TextChannel, DMChannel } from "discord.js";
+import Discord, { TextChannel } from "discord.js";
 
 import { HelpHandler, MemoryHandler, ReportHandler, TermHandler } from "../MessageHandlers";
 import { Message } from "../Models/Message";
 
 import { Bot, DeepSearch, MemberLevelSearch } from ".";
+import { Ding } from "../Models/Ding";
 
 
 interface ActionType {
@@ -54,6 +55,26 @@ export class BotContext {
             this.respondWithoutQuote(embed);
         },
 
+        replyDingMessageEmbed2: (ding: Ding) => {
+            const msg = ding.message || this.fetch.message(ding);
+
+            if (msg) {
+                const embed = new Discord.RichEmbed()
+                    .setColor(0x42b983)
+                    .setAuthor(msg.guild.member(msg.author).displayName, msg.author.displayAvatarURL)
+                    .setTitle(`Level ${ding.level}`)
+                    .setDescription(msg.content)
+                    .addField('\u200b', `[Jump to...](${msg.url})`)
+                    .setTimestamp(msg.createdTimestamp)
+                    .setFooter(`Brought to you by Blair`);
+
+                this.respondWithoutQuote(embed);
+            }
+            else {
+                this.send.replySorry();
+            }
+        },
+
         replyEmbed: (embed: Discord.RichEmbed) => this.msg.source.reply(embed),
 
         batchReply: async (content: (string | Discord.RichEmbed)[]) => {
@@ -69,6 +90,10 @@ export class BotContext {
 
         getUserLevel: (member: Discord.GuildMember) =>
             new MemberLevelSearch(this, this.msg.source, member, this.termHandler().getTerm()),
+        
+        message: (ding: Ding) =>
+            (this.msg.source.guild.channels.find(ch => ch.id === ding.channelID) as TextChannel)
+                .messages.get(ding.messageID),
     }
     
     private readonly respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });
