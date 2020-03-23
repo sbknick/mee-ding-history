@@ -25,7 +25,7 @@ export class ReportHandler {
     }
 
     async found(args: string[]) {
-        const found = await DingRepository.thething();
+        const found = await DingRepository.getStoredDebugDump();
 
         found.sort(this.sortFunc);
 

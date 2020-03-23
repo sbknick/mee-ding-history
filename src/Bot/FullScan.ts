@@ -3,14 +3,15 @@ import Discord, { TextChannel, Message, Channel } from "discord.js";
 import { logger } from "../Logger";
 import { MonitoringService } from "../Services/MonitoringService";
 import { Common } from "../Common";
-import { TermHandler } from "../MessageHandlers";
+import { TermHandler, LevelHandler } from "../MessageHandlers";
 import { DingRepository } from "../Repositories/DingRepository";
 
 
 //                        [ matchedMessages, shouldSearchMore, oldestMessageID ]
-type MatchingMessagesTuple = [Discord.Message[], boolean, Discord.Snowflake];
+// type MatchingMessagesTuple = [Discord.Message[], boolean, Discord.Snowflake];
 
 export class FullScan {
+    private storedLevels = new Map<[Discord.Snowflake, Discord.Snowflake], number>();
 
     constructor(
         private bot: Discord.Client,
@@ -86,9 +87,8 @@ export class FullScan {
     private async scanMessages(messages: Discord.Message[]) {
         for (const message of messages) {
             const level = Common.extractNumber(message.cleanContent);
+            this.testStoredLevel(message, level);
             const prev = await this.fetchDingMessage(<TextChannel>message.channel, message.id, message.mentions.members.first().id);
-
-            // if (message.mentions.members.first().id !== prev.author.id) throw new Error("message author mismatch");
 
             if (prev)
                 DingRepository.add({
@@ -110,6 +110,36 @@ export class FullScan {
         });
         return messages.find(m => m.author.id === authorID);
     }
+
+    private async testStoredLevel(message: Discord.Message, level: string): Promise<void> {
+        const levelNum = Number.parseInt(level);
+        const member = message.mentions.members.first();
+
+        const storedLevel = await this.getStoredLevel(member);
+
+        if (!storedLevel || storedLevel < levelNum) {
+            await this.setStoredLevel(member, levelNum);
+        }
+    }
+
+    private async getStoredLevel(member: Discord.GuildMember): Promise<number> {
+        let storedLevel = this.storedLevels.get(this.key(member));
+        if (storedLevel) return storedLevel;
+
+        const persistedLevel = await LevelHandler.get(member);
+        if (persistedLevel) {
+            const levelNum = Number.parseInt(persistedLevel.level);
+            this.storedLevels.set(this.key(member), levelNum);
+            return levelNum;
+        }
+    }
+
+    private async setStoredLevel(member: Discord.GuildMember, level: number) {
+        LevelHandler.add(member, level.toString());
+        this.storedLevels.set(this.key(member), level);
+    }
+
+    private key(member: Discord.GuildMember): [Discord.Snowflake, Discord.Snowflake] { return [member.guild.id, member.id]; }
 
     private async forEachAsync<T, V>(items: T[], asyncFunc: (item: T) => Promise<V>) {
         const promises: Promise<V>[] = [];

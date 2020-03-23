@@ -1,6 +1,6 @@
 import Discord, { TextChannel } from "discord.js";
 
-import { HelpHandler, MemoryHandler, ReportHandler, TermHandler } from "../MessageHandlers";
+import { HelpHandler, MemoryHandler, ReportHandler, TermHandler, LevelHandler } from "../MessageHandlers";
 import { Message } from "../Models/Message";
 
 import { Bot, DeepSearch, MemberLevelSearch } from ".";
@@ -16,6 +16,7 @@ export class BotContext {
     readonly member: Discord.GuildMember;
 
     private _helpHandler: HelpHandler;
+    private _levelHandler: LevelHandler;
     private _memoryHandler: MemoryHandler;
     private _reportHandler: ReportHandler;
     private _termHandler: TermHandler;
@@ -31,6 +32,7 @@ export class BotContext {
     readonly executor = async (action: ActionType) => await action(this);
 
     readonly helpHandler = () => this._helpHandler || (this._helpHandler = new HelpHandler(this));
+    readonly levelHandler = () => this._levelHandler || (this._levelHandler = new LevelHandler());
     readonly memoryHandler = () => this._memoryHandler || (this._memoryHandler = new MemoryHandler(this));
     readonly reportHandler = () => this._reportHandler || (this._reportHandler = new ReportHandler(this, this.bot.client));
     readonly termHandler = () => this._termHandler || (this._termHandler = new TermHandler(this));

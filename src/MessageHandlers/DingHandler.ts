@@ -55,8 +55,9 @@ export class DingHandler {
 
     private async getLevel(member: Discord.GuildMember, args: string[]) {
         if (args.length == 0) {
-            // return await this.ctx.fetch.getUserLevel(member).doSearch();
-            return await this.memberLevel(member);
+            const level = await this.ctx.levelHandler().get(member);
+            if (level) return level;
+            return await this.memberLevelSearch(member);
         }
 
         if (!Number.isNaN(Number(args[0]))) {
@@ -101,7 +102,7 @@ export class DingHandler {
         return deepSearch.doSearch(userID, searchJob.cancellationToken);
     }
 
-    private memberLevel(member: Discord.GuildMember): Promise<string> {
+    private memberLevelSearch(member: Discord.GuildMember): Promise<string> {
         const memberLevelSearch = this.ctx.fetch.getUserLevel(member);
 
         const levelJob: Job = {
