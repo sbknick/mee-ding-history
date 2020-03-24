@@ -56,7 +56,7 @@ export class DingHandler {
     private async getLevel(member: Discord.GuildMember, args: string[]) {
         if (args.length == 0) {
             const level = await this.ctx.levelHandler().get(member);
-            if (level) return level;
+            if (level) return level.level;
             return await this.memberLevelSearch(member);
         }
 

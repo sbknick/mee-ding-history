@@ -55,36 +55,34 @@ class Redisx {
 
         get: async (guildID: Discord.Snowflake, userID: Discord.Snowflake) => {
             const key = this.getKey(guildID, userID, "L");
-            return {
+            const level: Level = {
                 guildID,
                 userID,
                 level: await this.redis.get(key),
             };
+            if (!this.storedLevels.includes(key)) {
+                this.storedLevels.push(key);
+            }
+            return level;
         },
     };
 
-    async getStoredDebugDump(type: "dings" | "levels") {
-        switch (type) {
-            case "dings":
-                {
-                    const output: Ding[] = [];
-                    for (const key of this.storedDings) {
-                        const dingRecord = await this.redis.hgetall(key);
-                        output.push(this.toDing(dingRecord));
-                    }
-
-                    return output;
-                }
-
-            case "levels":
-                {
-                    const output: Level[] = []
-                    for (const key of this.storedLevels) {
-                        const levelRecord = await this.redis.get(key);
-                        output.push(this.toLevel(key, levelRecord));
-                    }
-                }
+    async getStoredDings_DebugDump(): Promise<Ding[]> {
+        const output: Ding[] = [];
+        for (const key of this.storedDings) {
+            const dingRecord = await this.redis.hgetall(key);
+            output.push(this.toDing(dingRecord));
         }
+        return output;
+    }
+
+    async getStoredLevels_DebugDump(): Promise<Level[]> {
+        const output: Level[] = []
+        for (const key of this.storedLevels) {
+            const levelRecord = await this.redis.get(key);
+            output.push(this.toLevel(key, levelRecord));
+        }
+        return output;
     }
 
     private getKeyForDing = (ding: Ding) => this.getKey(ding.guildID, ding.userID, ding.level);

@@ -15,7 +15,7 @@ class LevelRepositoryx {
     }
 
     async getStoredDebugDump() {
-        return Cache.getStoredDebugDump("levels");
+        return Cache.getStoredLevels_DebugDump();
     }
 }
 
