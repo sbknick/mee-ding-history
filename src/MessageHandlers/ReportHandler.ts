@@ -68,7 +68,7 @@ export class ReportHandler {
             do {
                 page += JSON.stringify(strigified[cursor++]) + "\n";
             }
-            while (cursor < strigified.length && page.length + strigified[cursor].length + 1 < 2000)
+            while (cursor < strigified.length && page.length + strigified[cursor].length + 1 < 1999)
             yield page;
         }
     }
