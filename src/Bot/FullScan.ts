@@ -12,6 +12,7 @@ import { DingRepository } from "../Repositories/DingRepository";
 
 export class FullScan {
     private storedLevels = new Map<[Discord.Snowflake, Discord.Snowflake], number>();
+    private dingMisses: string[] = [];
 
     constructor(
         private bot: Discord.Client,
@@ -37,6 +38,11 @@ export class FullScan {
             service.finished(err.message || err);
             logger.info(`Full scan of guilds errored.`);
             throw err;
+        }
+        finally {
+            for (const str of this.dingMisses) {
+                logger.info(str);
+            }
         }
     }
 
@@ -98,8 +104,11 @@ export class FullScan {
                     level,
                     messageID: prev.id,
                 });
-            else
-                logger.error(`ding found for ${message.mentions.members.first().displayName} level ${level}, but failed to find the associated message`);
+            else {
+                const str = `ding found for ${message.mentions.members.first().displayName} level ${level}, but failed to find the associated message :: ${message.url}`;
+                logger.error(str)
+                this.dingMisses.push(str);
+            }
         }
     }
 

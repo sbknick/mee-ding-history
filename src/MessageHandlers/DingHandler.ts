@@ -26,6 +26,7 @@ export class DingHandler {
         if (msg.source.mentions.members.size === 0) {
             return this.ctx.helpHandler().unknownInput(msg);
         }
+        args = args.filter(a => !a.startsWith("<@"));
         return this.exec(msg.source.mentions.members.first(), args);
     }
 
@@ -54,7 +55,7 @@ export class DingHandler {
     }
 
     private async getLevel(member: Discord.GuildMember, args: string[]) {
-        if (args.length == 0) {
+        if (args.length === 0) {
             const level = await this.ctx.levelHandler().get(member);
             if (level) return level.level;
             return await this.memberLevelSearch(member);
