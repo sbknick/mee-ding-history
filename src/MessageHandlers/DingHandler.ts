@@ -26,7 +26,7 @@ export class DingHandler {
         if (msg.source.mentions.members.size === 0) {
             return this.ctx.helpHandler().unknownInput(msg);
         }
-        args = args.filter(a => !a.startsWith("<@"));
+        args = args.filter(a => !a.startsWith("<@!"));
         return this.exec(msg.source.mentions.members.first(), args);
     }
 

@@ -92,7 +92,7 @@ export class FullScan {
 
     private async scanMessages(messages: Discord.Message[]) {
         for (const message of messages) {
-            const level = Common.extractNumber(message.cleanContent);
+            const level = Common.extractNumber(Common.exciseMention(message.content));
             this.testStoredLevel(message, level);
             const prev = await this.fetchDingMessage(<TextChannel>message.channel, message.id, message.mentions.members.first().id);
 
