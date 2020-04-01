@@ -18,14 +18,14 @@ export class MessageRouter implements Router {
 
     public route = (msg: Message) =>
         this.bot.createMsgContext(msg)(async ctx => {
-            if (msg.source.author.bot) {
-                if (msg.userID == this.bot.mee6UserID) {
-                    ctx.memoryHandler.commit(msg);
-                }
-                return;
-            }
-
             try {
+                if (msg.source.author.bot) {
+                    if (msg.userID == this.bot.mee6UserID) {
+                        ctx.memoryHandler.commit(msg);
+                    }
+                    return;
+                }
+
                 // Our bot needs to know if it will execute a command
                 // It will listen for messages that will start with `!`
                 if (msg.message.substring(0, 1) == '!') {
