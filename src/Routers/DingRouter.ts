@@ -1,8 +1,9 @@
 import Discord from "discord.js";
 
-import { Bot, BotContext } from "./Bot";
-import { Message } from "./Models/Message";
-import { TermHandler } from "./MessageHandlers";
+import { Bot, BotContext } from "../Bot";
+import { Message } from "../Models/Message";
+import { TermHandler } from "../MessageHandlers";
+import { Common } from "../Common";
 
 
 export class DingRouter {
@@ -24,9 +25,9 @@ export class DingRouter {
                 return drCtx.execUser(args.slice(1));
 
             case "term":
-                if (!msg.source.member.permissions.has("MANAGE_GUILD", true))
-                    return this.bot.getMsgContext(msg).helpHandler.unauthorized();
-                return drCtx.execTerm(args);
+                if (msg.source.member.permissions.has("MANAGE_GUILD", true) || Common.isDeveloper(msg.userID))
+                    return drCtx.execTerm(args);
+                return this.bot.getMsgContext(msg).helpHandler().unauthorized();
 
             default:
                 return drCtx.execDefault();
@@ -63,20 +64,20 @@ class DingRouterContext {
     }
 
     execDefault() {
-        this.ctx.helpHandler.unknownInput(this.msg);
+        this.ctx.helpHandler().unknownInput(this.msg);
     }
 
     private async exec(member: Discord.GuildMember, args: string[]) {
         const level = await this.getLevel(member, args);
 
         if (level === undefined) {
-            return this.ctx.helpHandler.levelError();
+            return this.ctx.helpHandler().levelError();
         }
 
         let searchResult = await this.ctx.fetch.deepSearch(level).doSearch(member.user.id);
 
         if (searchResult) {
-            this.ctx.send.replyEmbed(searchResult, level);
+            this.ctx.send.replyDingMessageEmbed(searchResult, level);
         }
         else {
             this.ctx.send.replySorry();
