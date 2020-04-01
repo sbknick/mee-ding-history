@@ -4,18 +4,21 @@ import { BotContext } from ".";
 import { Common } from "../Common";
 import { logger } from "../Logger";
 import { MonitoringService } from "../Services/MonitoringService";
+import { OnComplete } from "./OnComplete";
 
 
 //                        [ matchedMessages, shouldSearchMore, oldestMessageID ]
 type MatchingMessagesTuple = [Discord.Message[], boolean, Discord.Snowflake];
 
-export class MemberLevelSearch {
+export class MemberLevelSearch extends OnComplete {
     constructor(
         private ctx: BotContext,
         private msg: Discord.Message,
         private member: Discord.GuildMember,
         private searchTerm: string,
-    ) {}
+    ) {
+        super();
+    }
 
     private progress = {
         total: 0,
@@ -23,29 +26,32 @@ export class MemberLevelSearch {
         calc: () => `${this.progress.done}/${this.progress.total} (${ Math.floor(100 * this.progress.done / this.progress.total)}%)`,
     };
 
-    async doSearch(): Promise<string> {
+    async doSearch(cancellationToken: { cancelled: boolean }): Promise<string> {
         logger.info(`Starting deep search for level of userID: ${this.member.id}`);
         const service = MonitoringService.createService(this.msg, MemberLevelSearch.name, this.progress.calc);
 
         try {
-            const level = await this.doSearchInternal();
+            const level = await this.doSearchInternal(cancellationToken);
             service.finished();
+            this.completed(true);
             return level;
         }
         catch (err) {
             if (err instanceof Error) {
                 service.finished(err.message);
             }
+            this.completed(false);
             throw err;
         }
     }
 
-    private async doSearchInternal(): Promise<string> {
+    private async doSearchInternal(cancellationToken: { cancelled: boolean }): Promise<string> {
         const channels = this.getGuildTextChannels();
         const beforeMap = new Map<Discord.Channel, MatchingMessagesTuple>(channels.map(ch => [ch, [undefined, true, undefined]]));
 
         let levelResult = "0";
         while (levelResult === "0" && this.any(beforeMap, m => m[1] /* keepGoing */)) {
+            if (cancellationToken.cancelled) break;
             for (const channel of channels) {
                 const prevMatch = beforeMap.get(channel);
                 if (!prevMatch[1] /* keepGoing */) {

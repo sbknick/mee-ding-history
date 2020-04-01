@@ -4,7 +4,7 @@ import { logger } from "../Logger";
 import { Message } from "../Models/Message";
 import { Memory } from "../Models/Memory";
 
-import { BotContext } from ".";
+import { BotContext, FullScan } from ".";
 
 
 export class Bot {
@@ -12,7 +12,7 @@ export class Bot {
     private ctx: BotContext;
 
     constructor(
-        private client: Discord.Client
+        public client: Discord.Client
     ) {
         this.client.on("ready", async () => {
             this.client.user.setUsername("Ding-Bot");
@@ -25,6 +25,9 @@ export class Bot {
             }
 
             logger.info("Ready! " + this.client.user.username + " - (" + this.client.user.id + ")");
+
+            const fullScanTask = new FullScan(this.client, this.mee6);
+            fullScanTask.doScan(); // await
         });
     }
 

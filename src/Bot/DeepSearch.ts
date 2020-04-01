@@ -4,55 +4,59 @@ import { BotContext } from ".";
 import { Common } from "../Common";
 import { logger } from "../Logger";
 import { MonitoringService } from "../Services/MonitoringService";
+import { OnComplete } from "./OnComplete";
 
 
 //                        [ matchedMessages, shouldSearchMore, oldestMessageID ]
 type MatchingMessagesTuple = [Discord.Message[], boolean, Discord.Snowflake];
 
-export class DeepSearch {
+export class DeepSearch extends OnComplete {
     constructor(
         private ctx: BotContext,
         private msg: Discord.Message,
         private searchTerm: string,
         private level: string
-    ) {}
+    ) {
+        super();
+    }
 
     private progress = {
         done: 0,
         calc: () => this.progress.done.toString(),
     };
 
-    async doSearch(userID: string): Promise<Discord.Message> {
+    async doSearch(userID: string, cancellationToken: { cancelled: boolean }): Promise<Discord.Message> {
         logger.info(`Starting user-requested deepSearch for userID: ${userID}`);
         const service = MonitoringService.createService(this.msg, DeepSearch.name, this.progress.calc);
 
         let message: Discord.Message;
         try {
-            message = await this.doSearchInternal(userID);
+            message = await this.doSearchInternal(userID, cancellationToken);
             service.finished();
+            this.completed(true);
             return message;
         }
         catch (err) {
             if (err instanceof Error) {
                 service.finished(err.message);
             }
+            this.completed(false);
             throw err;
         }
     }
 
-    private async doSearchInternal(userID: string): Promise<Discord.Message> {
-        let cancelled = false;
+    private async doSearchInternal(userID: string, cancellationToken: { cancelled: boolean }): Promise<Discord.Message> {
         let foundMessage: Discord.Message;
         let messages: Discord.Message[];
 
         const channels = this.getGuildTextChannels();
 
         for (const channel of channels) {
-            if (cancelled) break;
+            if (cancellationToken.cancelled) break;
             let before: string = undefined;
             let keepGoing: boolean = true;
 
-            while (!cancelled && keepGoing) {
+            while (!cancellationToken.cancelled && keepGoing) {
                 [messages, keepGoing, before] = await this.fetchMatchingMessages(userID, channel, before);
 
                 for (const message of messages) {
@@ -63,7 +67,7 @@ export class DeepSearch {
                     }
 
                     foundMessage = prev;
-                    cancelled = true;
+                    cancellationToken.cancelled = true;
                     break;
                 }
             }

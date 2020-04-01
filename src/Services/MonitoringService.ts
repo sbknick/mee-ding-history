@@ -38,14 +38,24 @@ class MonitoringServicex {
     private readonly erroredServices = new Map<Discord.Snowflake, ErroredService[]>();
 
     createService(msg: Message, name: string, progressDelegate: () => string): Service {
-        const serviceModel: ServiceModel = {
-            name,
-            command: msg.cleanContent,
-            messageID: msg.id,
-            guildID: (msg.guild ? msg.guild.id : undefined),
-            username: msg.member.displayName,
-            progress: progressDelegate,
-        };
+        let serviceModel: ServiceModel;
+        
+        if (msg) {
+            serviceModel = {
+                name,
+                command: msg.cleanContent,
+                messageID: msg.id,
+                guildID: (msg.guild ? msg.guild.id : undefined),
+                username: msg.member.displayName,
+                progress: progressDelegate,
+            };
+        }
+        else {
+            serviceModel = {
+                name,
+                progress: progressDelegate,
+            } as ServiceModel;
+        }
 
         this.registerService(serviceModel);
 

@@ -1,9 +1,10 @@
-import Discord, { TextChannel, DMChannel } from "discord.js";
+import Discord, { TextChannel } from "discord.js";
 
-import { HelpHandler, MemoryHandler, ReportHandler, TermHandler } from "../MessageHandlers";
+import { HelpHandler, MemoryHandler, ReportHandler, TermHandler, LevelHandler } from "../MessageHandlers";
 import { Message } from "../Models/Message";
 
 import { Bot, DeepSearch, MemberLevelSearch } from ".";
+import { Ding } from "../Models/Ding";
 
 
 interface ActionType {
@@ -15,12 +16,13 @@ export class BotContext {
     readonly member: Discord.GuildMember;
 
     private _helpHandler: HelpHandler;
+    private _levelHandler: LevelHandler;
     private _memoryHandler: MemoryHandler;
     private _reportHandler: ReportHandler;
     private _termHandler: TermHandler;
 
     constructor(
-        bot: Bot,
+        private bot: Bot,
         private msg: Message
     ) {
         this.mee6UserID = bot.mee6UserID();
@@ -30,8 +32,9 @@ export class BotContext {
     readonly executor = async (action: ActionType) => await action(this);
 
     readonly helpHandler = () => this._helpHandler || (this._helpHandler = new HelpHandler(this));
+    readonly levelHandler = () => this._levelHandler || (this._levelHandler = new LevelHandler());
     readonly memoryHandler = () => this._memoryHandler || (this._memoryHandler = new MemoryHandler(this));
-    readonly reportHandler = () => this._reportHandler || (this._reportHandler = new ReportHandler(this));
+    readonly reportHandler = () => this._reportHandler || (this._reportHandler = new ReportHandler(this, this.bot.client));
     readonly termHandler = () => this._termHandler || (this._termHandler = new TermHandler(this));
 
     readonly send = {
@@ -39,7 +42,7 @@ export class BotContext {
         dm: (response: string) => this.msg.source.author.send(response),
         cleanReply: (response: string) => this.msg.source.reply(response).then((m: Discord.Message) => m.delete(5 * 60 * 1000)),
 
-        replySorry: () => this.send.reply(` sorry, I can't find that. :(`),
+        replySorry: () => this.send.reply(" sorry, I can't find that. :sob:"),
 
         replyDingMessageEmbed: (msg: Discord.Message, level: string) => {
             const embed = new Discord.RichEmbed()
@@ -49,9 +52,29 @@ export class BotContext {
                 .setDescription(msg.content)
                 .addField('\u200b', `[Jump to...](${msg.url})`)
                 .setTimestamp(msg.createdTimestamp)
-                .setFooter(`Brought to you by Blair`);
+                .setFooter("Brought to you by Blair");
 
             this.respondWithoutQuote(embed);
+        },
+
+        replyDingMessageEmbed2: async (ding: Ding) => {
+            const msg = ding.message || await this.fetch.message(ding);
+
+            if (msg) {
+                const embed = new Discord.RichEmbed()
+                    .setColor(0x42b983)
+                    .setAuthor(msg.guild.member(msg.author).displayName, msg.author.displayAvatarURL)
+                    .setTitle(`Level ${ding.level}`)
+                    .setDescription(msg.content)
+                    .addField('\u200b', `[Jump to...](${msg.url})`)
+                    .setTimestamp(msg.createdTimestamp)
+                    .setFooter("Brought to you by Blair");
+
+                this.respondWithoutQuote(embed);
+            }
+            else {
+                this.send.replySorry();
+            }
         },
 
         replyEmbed: (embed: Discord.RichEmbed) => this.msg.source.reply(embed),
@@ -69,6 +92,11 @@ export class BotContext {
 
         getUserLevel: (member: Discord.GuildMember) =>
             new MemberLevelSearch(this, this.msg.source, member, this.termHandler().getTerm()),
+        
+        message: (ding: Ding) => {
+            return (this.msg.source.guild.channels.get(ding.channelID) as TextChannel)
+                .fetchMessage(ding.messageID);
+        },
     }
     
     private readonly respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });

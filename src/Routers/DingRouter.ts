@@ -2,7 +2,7 @@ import Discord from "discord.js";
 
 import { Bot, BotContext } from "../Bot";
 import { Message } from "../Models/Message";
-import { TermHandler } from "../MessageHandlers";
+import { TermHandler, DingHandler } from "../MessageHandlers";
 import { Common } from "../Common";
 
 
@@ -19,15 +19,22 @@ export class DingRouter {
 
         switch (subCmd) {
             case "me":
-                return drCtx.execMe(args);
+                return new DingHandler(this.bot.getMsgContext(msg)).me(msg, args);
+                // return drCtx.execMe(args);
 
             case "user":
-                return drCtx.execUser(args.slice(1));
+                return new DingHandler(this.bot.getMsgContext(msg)).user(msg, args);
+                // return drCtx.execUser(args.slice(1));
 
             case "term":
                 if (msg.source.member.permissions.has("MANAGE_GUILD", true) || Common.isDeveloper(msg.userID))
                     return drCtx.execTerm(args);
                 return this.bot.getMsgContext(msg).helpHandler().unauthorized();
+
+            case "cancel":
+                if (Common.isDeveloper(msg.userID)) {
+                    return new DingHandler(this.bot.getMsgContext(msg)).cancelJobs();
+                }
 
             default:
                 return drCtx.execDefault();
@@ -52,45 +59,45 @@ class DingRouterContext {
         }
     }
 
-    execMe(args: string[]) {
-        return this.exec(this.msg.source.member, args);
-    }
+    // execMe(args: string[]) {
+    //     return this.exec(this.msg.source.member, args);
+    // }
 
-    execUser(args: string[]) {
-        if (this.msg.source.mentions.members.size == 0) {
-            return this.execDefault();
-        }
-        return this.exec(this.msg.source.mentions.members.first(), args);
-    }
+    // execUser(args: string[]) {
+    //     if (this.msg.source.mentions.members.size == 0) {
+    //         return this.execDefault();
+    //     }
+    //     return this.exec(this.msg.source.mentions.members.first(), args);
+    // }
 
     execDefault() {
         this.ctx.helpHandler().unknownInput(this.msg);
     }
 
-    private async exec(member: Discord.GuildMember, args: string[]) {
-        const level = await this.getLevel(member, args);
+    // private async exec(member: Discord.GuildMember, args: string[]) {
+    //     const level = await this.getLevel(member, args);
 
-        if (level === undefined) {
-            return this.ctx.helpHandler().levelError();
-        }
+    //     if (level === undefined) {
+    //         return this.ctx.helpHandler().levelError();
+    //     }
 
-        let searchResult = await this.ctx.fetch.deepSearch(level).doSearch(member.user.id);
+    //     let searchResult = await this.ctx.fetch.deepSearch(level).doSearch(member.user.id, undefined);
 
-        if (searchResult) {
-            this.ctx.send.replyDingMessageEmbed(searchResult, level);
-        }
-        else {
-            this.ctx.send.replySorry();
-        }
-    }
+    //     if (searchResult) {
+    //         this.ctx.send.replyDingMessageEmbed(searchResult, level);
+    //     }
+    //     else {
+    //         this.ctx.send.replySorry();
+    //     }
+    // }
 
-    private async getLevel(member: Discord.GuildMember, args: string[]) {
-        if (args.length == 0) {
-            return await this.ctx.fetch.getUserLevel(member).doSearch();
-        }
+    // private async getLevel(member: Discord.GuildMember, args: string[]) {
+    //     if (args.length == 0) {
+    //         return await this.ctx.fetch.getUserLevel(member).doSearch();
+    //     }
 
-        if (!Number.isNaN(Number(args[0]))) {
-            return args[0];
-        }
-    }
+    //     if (!Number.isNaN(Number(args[0]))) {
+    //         return args[0];
+    //     }
+    // }
 }
