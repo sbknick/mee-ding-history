@@ -1,6 +1,6 @@
 {
     "name": "mee-ding-history-bot",
-    "version": "1.0.0",
+    "version": "0.2.0",
     "description": "A bot to help MEE remember what people said when they dinged.",
     "main": "dist/app.js",
     "author": "Blair Knickerbocker",

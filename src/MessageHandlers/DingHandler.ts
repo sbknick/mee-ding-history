@@ -1,36 +1,35 @@
 import Discord from "discord.js";
 
-import { BotContext, DeepSearch, MemberLevelSearch } from "../Bot";
+import { BotContext } from "../Bot";
 import { Message } from "../Models/Message";
 import { Ding } from "../Models/Ding";
 import { DingRepository } from "../Repositories/DingRepository";
 
 
 interface Job {
-    // job: DeepSearch | MemberLevelSearch;
     cancellationToken: { cancelled: boolean };
 }
 
 export class DingHandler {
     private static runningJobs: Job[] = [];
 
-    constructor(
+    public constructor(
         private ctx: BotContext
     ) {}
 
-    me(msg: Message, args: string[]) {
+    public me(msg: Message, args: string[]) {
         return this.exec(msg.source.member, args);
     }
 
-    user(msg: Message, args: string[]) {
+    public user(msg: Message, args: string[]) {
         if (msg.source.mentions.members.size === 0) {
-            return this.ctx.helpHandler().unknownInput(msg);
+            return this.ctx.helpHandler.unknownInput(msg);
         }
         args = args.filter(a => !a.startsWith("<@!"));
         return this.exec(msg.source.mentions.members.first(), args);
     }
 
-    cancelJobs() {
+    public cancelJobs() {
         for (const job of DingHandler.runningJobs) {
             job.cancellationToken.cancelled = true;
         }
@@ -41,7 +40,7 @@ export class DingHandler {
         const level = await this.getLevel(member, args);
 
         if (level === undefined) {
-            return this.ctx.helpHandler().levelError();
+            return this.ctx.helpHandler.levelError();
         }
 
         const ding = await this.getDing(member, level);
@@ -56,7 +55,7 @@ export class DingHandler {
 
     private async getLevel(member: Discord.GuildMember, args: string[]) {
         if (args.length === 0) {
-            const level = await this.ctx.levelHandler().get(member);
+            const level = await this.ctx.levelHandler.get(member);
             if (level) return level.level;
             return await this.memberLevelSearch(member);
         }
@@ -91,7 +90,6 @@ export class DingHandler {
         const deepSearch = this.ctx.fetch.deepSearch(level);
 
         const searchJob: Job = {
-            // job: deepSearch,
             cancellationToken: { cancelled: false },
         };
 

@@ -4,7 +4,7 @@ import Redis from "ioredis";
 import { logger } from "../Logger";
 import { Ding } from "../Models/Ding";
 import { Level } from "../Models/Level";
-import { Common } from "../Common";
+
 
 
 interface CacheAccess<TModel> {

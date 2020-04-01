@@ -1,43 +1,50 @@
 import Discord, { TextChannel } from "discord.js";
 
-import { HelpHandler, MemoryHandler, ReportHandler, TermHandler, LevelHandler } from "../MessageHandlers";
+import { HelpHandler, MemoryHandler, ReportHandler, TermHandler, LevelHandler, DingHandler } from "../MessageHandlers";
 import { Message } from "../Models/Message";
 
 import { Bot, DeepSearch, MemberLevelSearch } from ".";
 import { Ding } from "../Models/Ding";
+import { OnComplete } from "./OnComplete";
 
 
 interface ActionType {
     (ctx: BotContext): Promise<any>;
 }
 
-export class BotContext {
-    readonly mee6UserID: Discord.Snowflake;
-    readonly member: Discord.GuildMember;
+export class BotContext extends OnComplete {
+    public readonly mee6UserID: Discord.Snowflake;
+    public readonly member: Discord.GuildMember;
 
+    private _dingHandler: DingHandler;
     private _helpHandler: HelpHandler;
     private _levelHandler: LevelHandler;
     private _memoryHandler: MemoryHandler;
     private _reportHandler: ReportHandler;
     private _termHandler: TermHandler;
 
-    constructor(
+    public get dingHandler() { return this._dingHandler || (this._dingHandler = new DingHandler(this)); }
+    public get helpHandler() { return this._helpHandler || (this._helpHandler = new HelpHandler(this)); }
+    public get levelHandler() { return this._levelHandler || (this._levelHandler = new LevelHandler()); }
+    public get memoryHandler() { return this._memoryHandler || (this._memoryHandler = new MemoryHandler(this)); }
+    public get reportHandler() { return this._reportHandler || (this._reportHandler = new ReportHandler(this, this.bot.client)); }
+    public get termHandler() { return this._termHandler || (this._termHandler = new TermHandler(this)); }
+
+    public constructor(
         private bot: Bot,
         private msg: Message
     ) {
-        this.mee6UserID = bot.mee6UserID();
+        super();
+        this.mee6UserID = bot.mee6UserID;
         this.member = msg.source.member;
     }
 
-    readonly executor = async (action: ActionType) => await action(this);
+    public executor = async (action: ActionType) => {
+        const result = await action(this);
+        this.completed(result);
+    }
 
-    readonly helpHandler = () => this._helpHandler || (this._helpHandler = new HelpHandler(this));
-    readonly levelHandler = () => this._levelHandler || (this._levelHandler = new LevelHandler());
-    readonly memoryHandler = () => this._memoryHandler || (this._memoryHandler = new MemoryHandler(this));
-    readonly reportHandler = () => this._reportHandler || (this._reportHandler = new ReportHandler(this, this.bot.client));
-    readonly termHandler = () => this._termHandler || (this._termHandler = new TermHandler(this));
-
-    readonly send = {
+    public readonly send = {
         reply: (response: string) => this.msg.source.reply(response),
         dm: (response: string) => this.msg.source.author.send(response),
         cleanReply: (response: string) => this.msg.source.reply(response).then((m: Discord.Message) => m.delete(5 * 60 * 1000)),
@@ -86,12 +93,12 @@ export class BotContext {
         },
     }
 
-    readonly fetch = {
+    public readonly fetch = {
         deepSearch: (level: string) =>
-            new DeepSearch(this, this.msg.source, this.termHandler().getTerm(), level),
+            new DeepSearch(this, this.msg.source, this.termHandler.getTerm(), level),
 
         getUserLevel: (member: Discord.GuildMember) =>
-            new MemberLevelSearch(this, this.msg.source, member, this.termHandler().getTerm()),
+            new MemberLevelSearch(this, this.msg.source, member, this.termHandler.getTerm()),
         
         message: (ding: Ding) => {
             return (this.msg.source.guild.channels.get(ding.channelID) as TextChannel)
@@ -99,5 +106,5 @@ export class BotContext {
         },
     }
     
-    private readonly respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });
+    private respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });
 }

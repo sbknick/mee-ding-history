@@ -10,6 +10,10 @@ import { OnComplete } from "./OnComplete";
 //                        [ matchedMessages, shouldSearchMore, oldestMessageID ]
 type MatchingMessagesTuple = [Discord.Message[], boolean, Discord.Snowflake];
 
+/**
+ * @deprecated A combination of FullScan and Realtime Listening is now used to find and cache ding messages.
+ * This is planned removed after production launch and stabilization of those two features.
+ */
 export class DeepSearch extends OnComplete {
     constructor(
         private ctx: BotContext,

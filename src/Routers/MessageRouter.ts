@@ -16,11 +16,11 @@ export class MessageRouter implements Router {
         this.dingRouter = new DingRouter(bot);
     }
 
-    public route = async (msg: Message) =>
+    public route = (msg: Message) =>
         this.bot.createMsgContext(msg)(async ctx => {
             if (msg.source.author.bot) {
-                if (msg.userID == this.bot.mee6UserID()) {
-                    ctx.memoryHandler().commit(msg);
+                if (msg.userID == this.bot.mee6UserID) {
+                    ctx.memoryHandler.commit(msg);
                 }
                 return;
             }
@@ -45,7 +45,7 @@ export class MessageRouter implements Router {
                 logger.error("Message Handling Failed: ", error);
             }
             finally {
-                ctx.memoryHandler().remember(msg);
+                ctx.memoryHandler.remember(msg);
             }
         });
         
@@ -54,21 +54,21 @@ export class MessageRouter implements Router {
             case "report":
             case "sitrep":
                 if (Common.isDeveloper(msg.userID)) {
-                    await ctx.reportHandler().report();
+                    await ctx.reportHandler.report();
                     if (args.length > 0 && (args.includes("-c") || args.includes("--clear"))) {
-                        await ctx.reportHandler().clear(args);
+                        await ctx.reportHandler.clear(args);
                     }
                     return;
                 }
             
             case "clear":
                 if (Common.isDeveloper(msg.userID)) {
-                    return await ctx.reportHandler().clear(args);
+                    return await ctx.reportHandler.clear(args);
                 }
 
             case "found":
                 if (Common.isDeveloper(msg.userID)) {
-                    return await ctx.reportHandler().found(args);
+                    return await ctx.reportHandler.found(args);
                 }
             
             default:
@@ -81,23 +81,23 @@ export class MessageRouter implements Router {
             // !ding
             case "ding":
                 if (args.length == 0 || args[0] == "help")
-                    return ctx.helpHandler().help();
+                    return ctx.helpHandler.help();
 
                 return await this.dingRouter.route(msg, args);
 
             case "report":
             case "sitrep":
                 if (Common.isDeveloper(msg.userID)) {
-                    await ctx.reportHandler().report();
+                    await ctx.reportHandler.report();
                     if (args.length > 0 && (args.includes("-c") || args.includes("--clear"))) {
-                        await ctx.reportHandler().clear(args);
+                        await ctx.reportHandler.clear(args);
                     }
                     return;
                 }
             
             case "clear":
                 if (Common.isDeveloper(msg.userID)) {
-                    return await ctx.reportHandler().clear(args);
+                    return await ctx.reportHandler.clear(args);
                 }
         }
     }

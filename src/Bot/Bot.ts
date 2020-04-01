@@ -2,14 +2,16 @@ import Discord from "discord.js";
 
 import { logger } from "../Logger";
 import { Message } from "../Models/Message";
-import { Memory } from "../Models/Memory";
 
 import { BotContext, FullScan } from ".";
 
 
 export class Bot {
     private mee6: Discord.User;
-    private ctx: BotContext;
+    private ctxMap = new Map<Message, BotContext>();
+
+    public get userID() { return this.client.user.id; }
+    public get mee6UserID() { return this.mee6.id; }
 
     constructor(
         public client: Discord.Client
@@ -32,19 +34,11 @@ export class Bot {
     }
 
     public createMsgContext = (msg: Message) => {
-        this.ctx = new BotContext(this, msg);
-        return this.ctx.executor;
+        const ctx = new BotContext(this, msg);
+        ctx.onComplete(() => this.ctxMap.delete(msg));
+        this.ctxMap.set(msg, ctx);
+        return ctx.executor;
     }
 
-    public getMsgContext = (msg: Message) => this.ctx;
-
-    public userID = () => this.client.user.id;
-    public mee6UserID = () => this.mee6.id;
-
-    public retrieveMessage: (memory: Memory) => string = memory => {
-        const ch = <Discord.TextChannel>this.client.channels.get(memory.channelID);
-        const msg = ch.messages.get(memory.messageID);
-
-        return msg.content;
-    }
+    public getMsgContext = (msg: Message) => this.ctxMap.get(msg).executor;
 }
