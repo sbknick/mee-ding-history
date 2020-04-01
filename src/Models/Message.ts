@@ -10,5 +10,5 @@ export interface Message {
 }
 
 export interface MessageHandler {
-    (msg: Message): void;
+    (msg: Message): Promise<void>;
 }

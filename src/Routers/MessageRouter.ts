@@ -44,9 +44,6 @@ export class MessageRouter implements Router {
             catch (error) {
                 logger.error("Message Handling Failed: ", error);
             }
-            finally {
-                ctx.memoryHandler.remember(msg);
-            }
         });
         
     private async routeDM(ctx: BotContext, cmd: string, msg: Message, args: string[]) {
