@@ -1,8 +1,6 @@
 import Discord, { TextChannel } from "discord.js";
 
 import { BotContext } from "../Bot";
-import { Convert } from "../Convert";
-import { Memory } from "../Models/Memory";
 import { MessageHandler } from "../Models/Message";
 import { Common } from "../Common";
 import { Fetch } from "../DiscordUtil";
@@ -11,9 +9,6 @@ import { logger } from "../Logger";
 
 
 export class MemoryHandler {
-    // key: userID
-    private lastMessageMap: Map<string, Memory> = new Map<string, Memory>();
-
     public constructor (
         private ctx: BotContext
     ) {}
@@ -40,8 +35,6 @@ export class MemoryHandler {
             messageID: dingMessage.id,
             level
         });
-
-        logger.info(`realtime memory!:: ${member.displayName} - L${level} - ${dingMessage.cleanContent}`);
     }
 
     private getDingMessage(msg: Discord.Message, member: Discord.GuildMember) {
