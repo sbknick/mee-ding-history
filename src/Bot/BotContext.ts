@@ -51,20 +51,7 @@ export class BotContext extends OnComplete {
 
         replySorry: () => this.send.reply(" sorry, I can't find that. :sob:"),
 
-        replyDingMessageEmbed: (msg: Discord.Message, level: string) => {
-            const embed = new Discord.RichEmbed()
-                .setColor(0x42b983)
-                .setAuthor(msg.guild.member(msg.author).displayName, msg.author.displayAvatarURL)
-                .setTitle(`Level ${level}`)
-                .setDescription(msg.content)
-                .addField('\u200b', `[Jump to...](${msg.url})`)
-                .setTimestamp(msg.createdTimestamp)
-                .setFooter("Brought to you by Blair");
-
-            this.respondWithoutQuote(embed);
-        },
-
-        replyDingMessageEmbed2: async (ding: Ding) => {
+        replyDingMessageEmbed: async (ding: Ding) => {
             const msg = ding.message || await this.fetch.message(ding);
 
             if (msg) {
@@ -76,6 +63,10 @@ export class BotContext extends OnComplete {
                     .addField('\u200b', `[Jump to...](${msg.url})`)
                     .setTimestamp(msg.createdTimestamp)
                     .setFooter("Brought to you by Blair");
+
+                if (msg.attachments.size > 0) {
+                    embed.setImage(msg.attachments.first().url);
+                }
 
                 this.respondWithoutQuote(embed);
             }

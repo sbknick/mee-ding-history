@@ -5,6 +5,7 @@ import { MonitoringService } from "../Services/MonitoringService";
 import { Common } from "../Common";
 import { TermHandler, LevelHandler } from "../MessageHandlers";
 import { DingRepository } from "../Repositories/DingRepository";
+import { Fetch } from "../DiscordUtil";
 
 
 //                        [ matchedMessages, shouldSearchMore, oldestMessageID ]
@@ -92,9 +93,9 @@ export class FullScan {
 
     private async scanMessages(messages: Discord.Message[]) {
         for (const message of messages) {
-            const level = Common.extractNumber(Common.exciseMention(message.content));
+            const level = Common.extractLevel(message);
             this.testStoredLevel(message, level);
-            const prev = await this.fetchDingMessage(<TextChannel>message.channel, message.id, message.mentions.members.first().id);
+            const prev = await this.fetchDingMessage(<TextChannel>message.channel, message.mentions.members.first(), message.id);
 
             if (prev)
                 DingRepository.add({
@@ -112,13 +113,7 @@ export class FullScan {
         }
     }
 
-    private async fetchDingMessage(channel: Discord.TextChannel, before: Discord.Snowflake, authorID: Discord.Snowflake) {
-        const messages = await channel.fetchMessages({
-            limit: 10,
-            before
-        });
-        return messages.find(m => m.author.id === authorID);
-    }
+    private fetchDingMessage = Fetch.firstBefore;
 
     private async testStoredLevel(message: Discord.Message, level: string): Promise<void> {
         const levelNum = Number.parseInt(level);

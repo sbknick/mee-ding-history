@@ -46,7 +46,7 @@ export class DingHandler {
         const ding = await this.getDing(member, level);
 
         if (ding) {
-            this.ctx.send.replyDingMessageEmbed2(ding);
+            this.ctx.send.replyDingMessageEmbed(ding);
         }
         else {
             this.ctx.send.replySorry();
