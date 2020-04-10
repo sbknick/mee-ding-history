@@ -4,19 +4,25 @@ import { Bot } from "./Bot";
 import { Convert } from "./Convert";
 import { MessageRouter } from "./Routers/MessageRouter";
 import { logger } from "./Logger";
+import { DB } from "./Repositories/DB";
+
 
 
 // Configure logger settings
 
 logger.configure();
 
-// Initialize Discord Bot
+(async () => {
+    await DB.createSchema();
+})();
 
-var discordClient = new Discord.Client();
+// // Initialize Discord Bot
 
-var bot = new Bot(discordClient);
+// var discordClient = new Discord.Client();
 
-var messageRouter = new MessageRouter(bot);
-discordClient.on("message", Convert.ToMyMessage().then(messageRouter.route));
+// var bot = new Bot(discordClient);
 
-discordClient.login(process.env.DISCORD_TOKEN);
+// var messageRouter = new MessageRouter(bot);
+// discordClient.on("message", Convert.ToMyMessage().then(messageRouter.route));
+
+// discordClient.login(process.env.DISCORD_TOKEN);

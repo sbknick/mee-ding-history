@@ -13,11 +13,13 @@
         "discord.js": "^11.5.1",
         "ioredis": "^4.16.0",
         "moment": "^2.24.0",
+        "pg": "^8.0.2",
         "winston": "^3.2.1"
     },
     "devDependencies": {
         "@types/ioredis": "^4.14.9",
         "@types/node": "^13.9.2",
+        "@types/pg": "^7.14.3",
         "typescript": "^3.8.2"
     }
 }
