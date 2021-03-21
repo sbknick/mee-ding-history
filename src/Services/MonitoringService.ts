@@ -62,8 +62,8 @@ class MonitoringServicex {
         return new Service(serviceModel, this.serviceFinished);
     }
 
-    generateReport(): (string | Discord.RichEmbed)[] {
-        const embeds: (string | Discord.RichEmbed)[] = [];
+    generateReport(): (string | Discord.MessageEmbed)[] {
+        const embeds: (string | Discord.MessageEmbed)[] = [];
         
         let services = this.toFlatArray(this.runningServices);
         if (services.length > 0) {
@@ -120,7 +120,7 @@ class MonitoringServicex {
         serviceList.push({ ...service, timestamp: moment() });
     }
 
-    private formatEmbeds(services: [string, TimestampedService][], color: ColorResolvable): Discord.RichEmbed[] {
+    private formatEmbeds(services: [string, TimestampedService][], color: ColorResolvable): Discord.MessageEmbed[] {
         return services
             .map(kvp => ({
                 service: kvp[1],
@@ -128,12 +128,12 @@ class MonitoringServicex {
             }))
             .map(({ service, elapsedTime }) => ({
                 service,
-                embed: new Discord.RichEmbed()
+                embed: new Discord.MessageEmbed()
                     .setColor(color)
                     .setTitle(service.name)
                     .addField("Cmd", service.command, true)
                     .addField("User", service.username, true)
-                    .addBlankField(true)
+                    .addField('\u200b', '\u200b', true) // blank field
                     .addField("Progress", service.progress(), true)
                     .addField("Time Elapsed", elapsedTime, true)
             }))

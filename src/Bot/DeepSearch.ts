@@ -81,12 +81,12 @@ export class DeepSearch extends OnComplete {
     }
 
     private getGuildTextChannels() {
-        const channels = this.msg.guild.channels.filter(ch => ch.type === "text");
+        const channels = this.msg.guild.channels.cache.filter(ch => ch.type === "text");
         return channels.map(ch => <TextChannel>ch);
     }
 
     private async fetchMatchingMessages(userID: Discord.Snowflake, channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
-        const messages = await channel.fetchMessages({
+        const messages = await channel.messages.fetch({
             limit: Common.searchPageSize,
             before,
         });
@@ -111,7 +111,7 @@ export class DeepSearch extends OnComplete {
         Common.extractNumber(msg.cleanContent) === this.level;
 
     private async fetchPreviousMessage(msg: Discord.Message) {
-        let drilldownMessages = await msg.channel.fetchMessages({
+        let drilldownMessages = await msg.channel.messages.fetch({
             limit: 1,
             before: msg.id,
         });

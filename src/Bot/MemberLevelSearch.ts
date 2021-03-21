@@ -91,12 +91,12 @@ export class MemberLevelSearch extends OnComplete {
     }
     
     private getGuildTextChannels() {
-        const channels = this.member.guild.channels.filter(ch => ch.type == "text");
+        const channels = this.member.guild.channels.cache.filter(ch => ch.type == "text");
         return channels.map(ch => <TextChannel>ch);
     }
     
     private async fetchMatchingMessages(channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
-        const messages = await channel.fetchMessages({
+        const messages = await channel.messages.fetch({
             limit: Common.searchPageSize,
             before,
         });

@@ -48,10 +48,10 @@ export class FullScan {
     }
 
     private async doScanInternal() {
-        await this.forEachAsync(this.bot.guilds.array(), async guild => {
+        await this.forEachAsync(this.bot.guilds.cache.array(), async guild => {
             logger.info(`Scanning guild: ` + guild.name);
             const guildSearchTerm = TermHandler.getTermForGuild(guild);
-            const channels = guild.channels.filter(ch => ch.type === "text" && ch.permissionsFor(this.bot.user).has("READ_MESSAGE_HISTORY")).array();
+            const channels = guild.channels.cache.filter(ch => ch.type === "text" && ch.permissionsFor(this.bot.user).has("READ_MESSAGE_HISTORY")).array();
 
             for (const channel of channels) {
                 await this.scanChannel(<TextChannel>channel, guildSearchTerm);
@@ -66,7 +66,7 @@ export class FullScan {
         logger.info(`Scanning channel: ${channel.guild.name}/${channel.name}`);
         do {
             try {
-                messages = await channel.fetchMessages({
+                messages = await channel.messages.fetch({
                     limit: Common.searchPageSize,
                     before
                 });
