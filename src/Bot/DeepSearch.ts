@@ -86,21 +86,27 @@ export class DeepSearch extends OnComplete {
     }
 
     private async fetchMatchingMessages(userID: Discord.Snowflake, channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
-        const messages = await channel.messages.fetch({
-            limit: Common.searchPageSize,
-            before,
-        });
-
-        const keepGoing = messages.size > 0;
-        const newBefore = keepGoing && this.oldest(messages.array()).id;
-
-        this.progress.done += messages.size;
-
-        return [
-            messages.filter(this.messageFilter(userID)).map(m => m),
-            keepGoing,
-            newBefore
-        ];
+        try {
+            
+            const messages = await channel.messages.fetch({
+                limit: Common.searchPageSize,
+                before,
+            });
+            
+            const keepGoing = messages.size > 0;
+            const newBefore = keepGoing && this.oldest(messages.array()).id;
+            
+            this.progress.done += messages.size;
+            
+            return [
+                messages.filter(this.messageFilter(userID)).map(m => m),
+                keepGoing,
+                newBefore
+            ];
+        }
+        catch (e) {
+            logger.error(e)
+        }
     }
     
     private messageFilter = (userID: Discord.Snowflake) => (msg: Discord.Message) =>
