@@ -32,12 +32,12 @@ func (dings) Put(ding Ding) {
 
 /** max levels **/
 
-func (maxLevels) Get(userId string, guildId string) string {
+func (maxLevels) Get(userId string, guildId string) (string, bool) {
 	ml, ok := maxLevelMap[key(guildId, userId)]
 	if ok {
-		return ml.Level
+		return ml.Level, true
 	}
-	return ""
+	return "", false
 }
 
 func (maxLevels) Update(userID string, guildId string, level string) {

@@ -48,6 +48,7 @@ var cancelHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 
 var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	var level string
+	var ok bool
 	if ctx.Arguments.Amount() > 0 {
 		_, err := ctx.Arguments.AsSingle().AsInt()
 		if err != nil {
@@ -58,7 +59,11 @@ var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	}
 
 	if level == "" {
-		level = data.Cache.MaxLevels.Get(ctx.Event.Author.ID, ctx.Event.GuildID)
+		level, ok = data.Cache.MaxLevels.Get(ctx.Event.Author.ID, ctx.Event.GuildID)
+	}
+	if !ok {
+		ctx.RespondText("error")
+		return
 	}
 
 	d := data.Cache.Dings.Get(ctx.Event.Author.ID, ctx.Event.GuildID, level)
@@ -67,7 +72,6 @@ var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 		ctx.RespondText("error")
 		return
 	}
-	// ctx.RespondText(m.Content)
 	reportAsEmbed(ctx, d)
 }
 
@@ -87,7 +91,7 @@ func reportAsEmbed(ctx *dgc.Ctx, d data.Ding) {
 		Fields: []*discordgo.MessageEmbedField{
 			{
 				Name:  "\u200b",
-				Value: fmt.Sprintf("[Jump to...](%s)", messageLink(d)), // discordgo.EndpointChannelMessage(d.ChannelID, d.MessageID)),
+				Value: fmt.Sprintf("[Jump to...](%s)", messageLink(d)),
 			},
 		},
 		Timestamp: string(d.Message.Timestamp),
@@ -101,18 +105,13 @@ func reportAsEmbed(ctx *dgc.Ctx, d data.Ding) {
 		emb.Image = &discordgo.MessageEmbedImage{URL: d.Message.Attachments[0].URL}
 	}
 
-	// ctx.RespondTextEmbed("this is text?", emb)
 	err = ctx.RespondEmbed(emb)
 	if err != nil {
 		fmt.Println("Error:", err)
 	}
-	// ctx.RespondTextEmbed("this is text", &discordgo.MessageEmbed{
-	// 	,
-	// })
 }
 
 func messageLink(d data.Ding) string {
-	// https://discordapp.com/api/v8/channels/681815996943826951/messages/736236143456026655
 	// `https://discord.com/channels/${this.guild ? this.guild.id : '@me'}/${this.channel.id}/${this.id}`
 	return fmt.Sprintf("https://discord.com/channels/%s/%s/%s", d.GuildID, d.ChannelID, d.MessageID)
 }

@@ -19,7 +19,6 @@ type Ding struct {
 
 func (ding Ding) Key() string {
 	return key(ding.GuildID, ding.UserID, ding.Level)
-	// return fmt.Sprintf("%s:%s:%s", ding.GuildID, ding.UserID, ding.Level)
 }
 
 type MaxLevel struct {

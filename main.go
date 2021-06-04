@@ -58,13 +58,4 @@ func main() {
 	signal.Notify(stop, os.Interrupt)
 	<-stop
 	log.Println("OS interrupt received, shutting down.")
-
-	// _, err := discordgo.New("Bot " + "authentication token")
-	// if err == nil {
-	// 	_ = fmt.Errorf("%s", err)
-	// }
-
-	// _ = dgc.Create(&dgc.Router{
-	// 	Prefixes: []string{"!"},
-	// })
 }

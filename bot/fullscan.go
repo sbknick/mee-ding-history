@@ -7,6 +7,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/sbknick/mee-ding-history/data"
+	"github.com/sbknick/mee-ding-history/services"
 )
 
 const searchPageSize = 100
@@ -45,14 +46,12 @@ func scanGuilds(bot *Bot, after string) error {
 	}
 
 	for _, guild := range guilds {
-		if guild.Name == "Spectre Creations" {
-			continue
-		}
+		// if guild.Name != "Blair's Test Server" {
+		// 	continue
+		// }
 
 		fmt.Println("Scanning guild", guild.Name)
-		guildSearchTerm := "GG" // BTS
-		// guildSearchTerm := "Gratz!" // Spectre
-		// TODO: term service lookup
+		guildSearchTerm := services.SearchTerm.GetSearchTerm(guild.Name)
 
 		scanChannels(bot, guild, guildSearchTerm, "")
 	}
@@ -120,9 +119,9 @@ func processHistory(bot *Bot) {
 
 				dingMsg := messages[i+1]
 				if dingMsg.Author.ID != m.Mentions[0].ID {
-					// panic("dafuq")
 					dingMisses = append(dingMisses, fmt.Sprintf("%s: %s", dingMsg.Author.Username, level))
 					fmt.Println("ding missed:", dingMsg.Author.Username, level)
+					// TODO:
 					// maybe ding miss, (deleted)
 					// maybe chat race
 				}
