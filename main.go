@@ -1,7 +1,6 @@
 package main
 
 import (
-	// _ "crypto/ed25519"
 	"flag"
 	"log"
 	"os"
@@ -15,9 +14,7 @@ import (
 )
 
 var (
-	GuildID        = *flag.String("guild", "", "Test guild ID. If not passed - bot registers commands globally")
-	BotToken       = *flag.String("token", "NjgxODE2MjU5MjM0NjI3NTk2.XnI_Uw.zv-h19wjU0ru2Y94eEGMJHIZeCs", "Bot access token")
-	RemoveCommands = *flag.Bool("rmcmd", true, "Remove all commands after shutdowning or not")
+	DiscordToken = *flag.String("discord-token", "", "Bot access token")
 )
 
 func main() {
@@ -33,7 +30,7 @@ func main() {
 	var session *discordgo.Session
 	var err error
 
-	if session, err = discordgo.New("Bot " + BotToken); err != nil {
+	if session, err = discordgo.New("Bot " + DiscordToken); err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
 	// session.StateEnabled = true
