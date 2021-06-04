@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "github.com/Lukaesebrot/dgc"
+	// _ "crypto/ed25519"
 	"flag"
 	"log"
 	"os"

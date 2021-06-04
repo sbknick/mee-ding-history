@@ -9,7 +9,7 @@ A helper Discord bot for MEE to remember what message people dinged on, because 
 * Realtime dings are not functional yet.
 * Dings are stored in unreliable cache memory, needs a proper DB setup for putting data on-ice.
 
-* !ding term : is still hardcoded ¯\_(ツ)_/¯
+* !ding term : is still hardcoded ¯\\_(ツ)_/¯
 
 ## Feature Requests
 

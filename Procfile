@@ -1,1 +1,1 @@
-worker: npm start
+worker: ./bin/mee-ding-history
