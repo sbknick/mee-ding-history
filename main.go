@@ -14,10 +14,12 @@ import (
 )
 
 var (
-	DiscordToken = *flag.String("discord-token", "", "Bot access token")
+	discordToken string
 )
 
 func main() {
+	flag.StringVar(&discordToken, "discord-token", "", "Discord bot access token")
+
 	flag.Parse()
 
 	router := dgc.Create(&dgc.Router{
@@ -30,10 +32,9 @@ func main() {
 	var session *discordgo.Session
 	var err error
 
-	if session, err = discordgo.New("Bot " + DiscordToken); err != nil {
+	if session, err = discordgo.New("Bot " + discordToken); err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
-	// session.StateEnabled = true
 
 	/** **/
 
