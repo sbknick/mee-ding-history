@@ -2,12 +2,17 @@ package bot
 
 import (
 	"fmt"
-	"log"
+	"regexp"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/sbknick/mee-ding-history/data"
 )
 
+const searchPageSize = 100
+
 var (
+	// bot          *Bot
 	storedLevels map[userGuildKey]int
 	dingMisses   []string
 
@@ -16,43 +21,51 @@ var (
 		calc func() string
 	}
 
-	myID string
+	taskQueue chan scanTask
 )
-
-func prep(session *discordgo.Session) error {
-	user, err := session.User("@me")
-	if err != nil {
-		return err
-	}
-
-	myID = user.ID
-	return nil
-}
 
 type userGuildKey struct{ userId, guildId string }
 
-func scanGuilds(session *discordgo.Session, after string) error {
-	guilds, err := session.UserGuilds(100, "", after)
+// FullScan initiates a full, deep scan of all guilds and all accessible text channels.
+func (bot *Bot) FullScan() error {
+	fmt.Println("Starting full scan of guilds.")
+	// TODO: inform monitoring service of task start
+
+	taskQueue = make(chan scanTask, 200)
+
+	go processHistory(bot)
+
+	return scanGuilds(bot, "")
+}
+
+func scanGuilds(bot *Bot, after string) error {
+	guilds, err := bot.session.UserGuilds(searchPageSize, "", after)
 	if err != nil {
 		return fmt.Errorf("guild fetch failed.\n%v", err)
 	}
 
 	for _, guild := range guilds {
-		fmt.Println("Scanning guild", guild.Name)
-		guildSearchTerm := "GG" // TODO: term service lookup
+		if guild.Name == "Spectre Creations" {
+			continue
+		}
 
-		scanChannels(session, guild, guildSearchTerm, "")
+		fmt.Println("Scanning guild", guild.Name)
+		guildSearchTerm := "GG" // BTS
+		// guildSearchTerm := "Gratz!" // Spectre
+		// TODO: term service lookup
+
+		scanChannels(bot, guild, guildSearchTerm, "")
 	}
 
-	if len(guilds) == 100 {
-		scanGuilds(session, guilds[99].ID)
+	if len(guilds) == searchPageSize {
+		scanGuilds(bot, guilds[searchPageSize-1].ID)
 	}
 
 	return nil
 }
 
-func scanChannels(session *discordgo.Session, guild *discordgo.UserGuild, searchTerm string, after string) error {
-	channels, err := session.GuildChannels(guild.ID)
+func scanChannels(bot *Bot, guild *discordgo.UserGuild, searchTerm string, after string) error {
+	channels, err := bot.session.GuildChannels(guild.ID)
 	if err != nil {
 		return fmt.Errorf("channel fetch failed for guild: %s\n%v", guild.Name, err)
 	}
@@ -62,60 +75,14 @@ func scanChannels(session *discordgo.Session, guild *discordgo.UserGuild, search
 			continue
 		}
 
-		p, err := session.UserChannelPermissions(myID, channel.ID)
+		p, err := bot.session.UserChannelPermissions(bot.myID, channel.ID)
 		if err != nil {
 			return fmt.Errorf("failed to fetch permissions for channel: %s\n%v", channel.Name, err)
 		}
 
 		if p&discordgo.PermissionReadMessageHistory != 0 {
 			fmt.Println("Initiating channel scan:", channel.Name)
-		}
-	}
-
-	return nil
-}
-
-// FullScan initiates a full, deep scan of all guilds and all accessible text channels.
-func FullScan(session *discordgo.Session, mee6 *discordgo.User) error {
-	fmt.Println("Starting full scan of guilds.")
-	if err := prep(session); err != nil {
-		return err
-	}
-	// TODO: inform monitoring service of task start
-
-	return scanGuilds(session, "")
-
-	guilds, err := session.UserGuilds(100, "", "")
-	if err != nil {
-		return fmt.Errorf("Guild fetch failed.\n%v", err)
-	}
-
-	for _, guild := range guilds {
-		fmt.Println("Scanning guild", guild.Name)
-		guildSearchTerm := "GG" // TODO: term service lookup
-
-		channels, err := session.GuildChannels(guild.ID)
-		if err != nil {
-			return fmt.Errorf("Channel fetch failed.\n%v", err)
-		}
-
-		for _, channel := range channels {
-			fmt.Println(" Scanning channel", channel.Name)
-			if channel.Type != discordgo.ChannelTypeGuildText {
-				continue
-			}
-
-			if perms, err := session.State.UserChannelPermissions(session.State.User.ID, channel.ID); err != nil {
-				log.Println("Error:", err)
-				continue
-			} else if perms&discordgo.PermissionReadMessageHistory == 0 {
-				continue
-			}
-			// else {
-			// 	log.Println("   Permissions:", perms, perms&discordgo.PermissionReadMessageHistory)
-			// }
-
-			scanChannel(channel, guildSearchTerm)
+			scanChannel(channel, searchTerm)
 		}
 	}
 
@@ -123,7 +90,79 @@ func FullScan(session *discordgo.Session, mee6 *discordgo.User) error {
 }
 
 func scanChannel(channel *discordgo.Channel, searchTerm string) {
-	fmt.Println("  Scanning channel", channel.Name)
+	taskQueue <- scanTask{channel: channel}
 }
 
-// var queuedRequests chan string = make(chan string, 40)
+type scanTask struct {
+	channel    *discordgo.Channel
+	before     string
+	searchTerm string
+}
+
+func processHistory(bot *Bot) {
+	for task := range taskQueue {
+		before := ""
+		if task.before != "" {
+			before = "After: " + task.before
+		}
+		fmt.Println(" - Starting Task:", task.channel.Name, before)
+
+		messages, _ := bot.session.ChannelMessages(task.channel.ID, searchPageSize, task.before, "", "")
+
+		for i, m := range messages {
+			if i < searchPageSize-1 &&
+				m.Author.ID == bot.mee6.ID &&
+				strings.Contains(m.ContentWithMentionsReplaced(), task.searchTerm) &&
+				len(m.Mentions) > 0 {
+
+				level := extractLevel(m.Content)
+				data.Cache.MaxLevels.Update(m.Mentions[0].ID, task.channel.GuildID, level)
+
+				dingMsg := messages[i+1]
+				if dingMsg.Author.ID != m.Mentions[0].ID {
+					// panic("dafuq")
+					dingMisses = append(dingMisses, fmt.Sprintf("%s: %s", dingMsg.Author.Username, level))
+					fmt.Println("ding missed:", dingMsg.Author.Username, level)
+					// maybe ding miss, (deleted)
+					// maybe chat race
+				}
+
+				d := data.Ding{
+					UserID:  dingMsg.Author.ID,
+					GuildID: task.channel.GuildID,
+					Level:   level,
+
+					MessageID: dingMsg.ID,
+					ChannelID: dingMsg.ChannelID,
+
+					Message: dingMsg,
+				}
+				data.Cache.Dings.Put(d)
+
+				fmt.Println("Cached level", level, "ding for", dingMsg.Author.Username)
+			}
+		}
+
+		if len(messages) == searchPageSize {
+			task.before = messages[searchPageSize-2].ID
+			taskQueue <- task
+		}
+	}
+}
+
+var (
+	mentionRegex      *regexp.Regexp = regexp.MustCompile(`(<@!\d+>)|(<@\d+>)`)
+	searchNumberRegex *regexp.Regexp = regexp.MustCompile(`([\d])+`)
+)
+
+func extractLevel(input string) string {
+	return extractNumber(exciseMention(input))
+}
+
+func extractNumber(input string) string {
+	return searchNumberRegex.FindString(input)
+}
+
+func exciseMention(input string) string {
+	return mentionRegex.ReplaceAllString(input, "")
+}

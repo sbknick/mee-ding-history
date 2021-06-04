@@ -53,7 +53,8 @@ func main() {
 	defer session.Close()
 	router.Initialize(session)
 
-	bot.FullScan(session, nil)
+	b, _ := bot.New(session)
+	_ = b.FullScan()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

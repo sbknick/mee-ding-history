@@ -5,5 +5,6 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	FullScan(nil, nil)
+	bot, _ := New(nil)
+	_ = bot.FullScan()
 }
