@@ -26,6 +26,7 @@ func main() {
 		Prefixes: []string{"!"},
 		Commands: []*dgc.Command{
 			cmds.Ding(),
+			cmds.Found(),
 		},
 	})
 
@@ -35,12 +36,24 @@ func main() {
 	if session, err = discordgo.New("Bot " + discordToken); err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
+	dingBot, _ := bot.New(session)
 
 	/** **/
 
-	session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Print("Ready!")
-	})
+	// session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+	// 	log.Print("Ready!")
+	// })
+
+	// session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// 	if m.Author.Bot && m.Author.ID == b.Mee6.ID {
+	// 		term := services.SearchTerm.GetSearchTerm(m.GuildID)
+	// 		if strings.Contains(m.Message.Content, term) {
+	// 			services.Memory.Commit(m.Message)
+	// 		}
+	// 	}
+	// })
+
+	session.AddHandler(dingBot.MessageScanner)
 
 	/** **/
 
@@ -51,8 +64,7 @@ func main() {
 	defer session.Close()
 	router.Initialize(session)
 
-	b, _ := bot.New(session)
-	_ = b.FullScan()
+	// _ = dingBot.FullScan()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

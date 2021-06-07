@@ -98,8 +98,11 @@ func reportAsEmbed(ctx *dgc.Ctx, d data.Ding) {
 		Footer:    &discordgo.MessageEmbedFooter{Text: "Brought to you by Blair"},
 	}
 	emb.Author = &discordgo.MessageEmbedAuthor{
-		Name:    ctx.Event.Author.Username,
+		Name:    ctx.Event.Member.Nick,
 		IconURL: ctx.Event.Author.AvatarURL(""),
+	}
+	if emb.Author.Name == "" {
+		emb.Author.Name = ctx.Event.Author.Username
 	}
 	if len(d.Message.Attachments) > 0 {
 		emb.Image = &discordgo.MessageEmbedImage{URL: d.Message.Attachments[0].URL}

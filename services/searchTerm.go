@@ -12,7 +12,7 @@ type searchTermService struct{}
 // TODO: Un-hard-code this.
 func (searchTermService) GetSearchTerm(guildName string) string {
 	switch guildName {
-	case "Blair's Test Server":
+	case "681815996943826945": // Test server
 		return "GG"
 	default:
 		return "Gratz!"

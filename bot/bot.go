@@ -6,7 +6,7 @@ import (
 
 type Bot struct {
 	session *discordgo.Session
-	mee6    *discordgo.User
+	Mee6    *discordgo.User
 	myID    string
 }
 
@@ -23,7 +23,7 @@ func New(session *discordgo.Session) (*Bot, error) {
 
 	return &Bot{
 		session: session,
-		mee6:    mee6,
+		Mee6:    mee6,
 		myID:    user.ID,
 	}, nil
 }

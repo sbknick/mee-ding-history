@@ -13,7 +13,6 @@ import (
 const searchPageSize = 100
 
 var (
-	// bot          *Bot
 	storedLevels map[userGuildKey]int
 	dingMisses   []string
 
@@ -51,7 +50,7 @@ func scanGuilds(bot *Bot, after string) error {
 		// }
 
 		fmt.Println("Scanning guild", guild.Name)
-		guildSearchTerm := services.SearchTerm.GetSearchTerm(guild.Name)
+		guildSearchTerm := services.SearchTerm.GetSearchTerm(guild.ID)
 
 		scanChannels(bot, guild, guildSearchTerm, "")
 	}
@@ -110,9 +109,9 @@ func processHistory(bot *Bot) {
 
 		for i, m := range messages {
 			if i < searchPageSize-1 &&
-				m.Author.ID == bot.mee6.ID &&
-				strings.Contains(m.ContentWithMentionsReplaced(), task.searchTerm) &&
-				len(m.Mentions) > 0 {
+				m.Author.ID == bot.Mee6.ID &&
+				strings.Contains(m.Content, task.searchTerm) &&
+				len(m.Mentions) == 1 {
 
 				level := extractLevel(m.Content)
 				data.Cache.MaxLevels.Update(m.Mentions[0].ID, task.channel.GuildID, level)
@@ -137,6 +136,17 @@ func processHistory(bot *Bot) {
 					Message: dingMsg,
 				}
 				data.Cache.Dings.Put(d)
+
+				if _, ok := services.UserNames.Get(d.UserID); !ok {
+					var userName string
+					if dingMsg.Member != nil {
+						userName = dingMsg.Member.Nick
+					}
+					if userName == "" {
+						userName = dingMsg.Author.Username
+					}
+					services.UserNames.Set(d.UserID, userName)
+				}
 
 				fmt.Println("Cached level", level, "ding for", dingMsg.Author.Username)
 			}

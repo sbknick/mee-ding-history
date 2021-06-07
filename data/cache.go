@@ -59,6 +59,10 @@ func (maxLevels) Update(userID string, guildId string, level string) {
 	}
 }
 
+func (maxLevels) All() map[string]MaxLevel {
+	return maxLevelMap
+}
+
 /** common util **/
 
 func Hydrate() {
