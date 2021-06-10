@@ -2,6 +2,8 @@ package data
 
 import (
 	"strconv"
+
+	"github.com/go-redis/redis"
 )
 
 var Cache cache
@@ -18,6 +20,8 @@ type (
 var (
 	dingMap     map[string]Ding     = make(map[string]Ding)
 	maxLevelMap map[string]MaxLevel = make(map[string]MaxLevel)
+
+	redisClient *redis.Client
 )
 
 /** dings **/
@@ -64,6 +68,14 @@ func (maxLevels) All() map[string]MaxLevel {
 }
 
 /** common util **/
+
+func Init(redisUrl string) {
+	redisClient = redis.NewClient(&redis.Options{
+		Addr: redisUrl,
+	})
+
+	// redisClient.
+}
 
 func Hydrate() {
 

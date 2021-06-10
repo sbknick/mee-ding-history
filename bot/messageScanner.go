@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -19,12 +20,16 @@ func (b *Bot) filter(msg *discordgo.MessageCreate, term string) bool {
 
 func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageCreate) {
 	if msg.Author.Bot && msg.Author.ID == b.Mee6.ID {
+		fmt.Println("from mee6")
+		fmt.Println("msg content:", msg.Message.Content)
 		term := services.SearchTerm.GetSearchTerm(msg.GuildID)
+		fmt.Println("term:", term)
 		if !b.filter(msg, term) {
+			fmt.Println("filter failed")
 			return
 		}
 
-		log.Println("Ding caught.")
+		fmt.Println("Ding caught.")
 
 		user := msg.Mentions[0]
 		level := extractLevel(msg.Content)

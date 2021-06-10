@@ -15,6 +15,6 @@ func (searchTermService) GetSearchTerm(guildName string) string {
 	case "681815996943826945": // Test server
 		return "GG"
 	default:
-		return "Gratz!"
+		return "DING!"
 	}
 }

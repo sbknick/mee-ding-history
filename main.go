@@ -15,11 +15,14 @@ import (
 
 var (
 	discordToken string
+	redisUrl     string
+	dbUrl        string
 )
 
 func main() {
 	flag.StringVar(&discordToken, "discord-token", "", "Discord bot access token")
-
+	flag.StringVar(&redisUrl, "redis", "", "Redis Url")
+	flag.StringVar(&dbUrl, "db", "", "Db Url")
 	flag.Parse()
 
 	router := dgc.Create(&dgc.Router{
