@@ -35,6 +35,10 @@ func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageC
 		level := extractLevel(msg.Content)
 		dingMessage := b.firstBefore(msg.Message, user)
 		log.Println("First before located.")
+		if dingMessage == nil {
+			fmt.Println("dingMessage is nil")
+			return
+		}
 
 		// services.Memory.Commit(ding)
 		data.Cache.Dings.Put(data.Ding{
@@ -48,7 +52,9 @@ func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageC
 
 		userName := ""
 		if _, ok := services.UserNames.Get(user.ID); !ok {
-			userName = dingMessage.Member.Nick
+			if dingMessage.Member != nil {
+				userName = dingMessage.Member.Nick
+			}
 			if userName == "" {
 				userName = user.Username
 			}
@@ -62,7 +68,7 @@ func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageC
 func (b *Bot) firstBefore(msg *discordgo.Message, user *discordgo.User) *discordgo.Message {
 	prev, err := b.session.ChannelMessages(msg.ChannelID, 10, msg.ID, "", "")
 	if err != nil {
-		panic(err)
+		fmt.Println("Error:", err)
 	}
 
 	for _, p := range prev {
