@@ -67,7 +67,7 @@ func main() {
 	defer session.Close()
 	router.Initialize(session)
 
-	// _ = dingBot.FullScan()
+	_ = dingBot.FullScan()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)

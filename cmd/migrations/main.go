@@ -17,7 +17,7 @@ func main() {
 	flag.StringVar(&dbUrl, "db", "", "")
 	flag.Parse()
 
-	log.Println("migrations running")
+	log.Println("Running Migrations...")
 
 	db := pg.Connect(&pg.Options{
 		Addr: dbUrl,

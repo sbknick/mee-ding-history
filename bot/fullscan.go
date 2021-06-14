@@ -13,25 +13,25 @@ import (
 const searchPageSize = 100
 
 var (
-	storedLevels map[userGuildKey]int
-	dingMisses   []string
+	dingMisses []string
 
-	progress struct {
-		done bool
-		calc func() string
-	}
+	// progress struct {
+	// 	done bool
+	// 	calc func() string
+	// }
 
 	taskQueue chan scanTask
 )
 
-type userGuildKey struct{ userId, guildId string }
-
 // FullScan initiates a full, deep scan of all guilds and all accessible text channels.
 func (bot *Bot) FullScan() error {
-	fmt.Println("Starting full scan of guilds.")
-	// TODO: inform monitoring service of task start
+	if taskQueue != nil {
+		return fmt.Errorf("full Scan already in progress")
+	}
 
+	fmt.Println("Starting full scan of guilds.")
 	taskQueue = make(chan scanTask, 200)
+	// TODO: inform monitoring service of task start
 
 	go processHistory(bot)
 
@@ -45,10 +45,6 @@ func scanGuilds(bot *Bot, after string) error {
 	}
 
 	for _, guild := range guilds {
-		// if guild.Name != "Blair's Test Server" {
-		// 	continue
-		// }
-
 		fmt.Println("Scanning guild", guild.Name)
 		guildSearchTerm := services.SearchTerm.GetSearchTerm(guild.ID)
 
@@ -79,7 +75,7 @@ func scanChannels(bot *Bot, guild *discordgo.UserGuild, searchTerm string, after
 		}
 
 		if p&discordgo.PermissionReadMessageHistory != 0 {
-			fmt.Println("Initiating channel scan:", channel.Name)
+			// fmt.Println("Initiating channel scan:", channel.Name)
 			scanChannel(channel, searchTerm)
 		}
 	}
@@ -98,12 +94,17 @@ type scanTask struct {
 }
 
 func processHistory(bot *Bot) {
+	defer func() {
+		fmt.Println("Full Scan of guilds complete.")
+		taskQueue = nil
+	}()
+
 	for task := range taskQueue {
-		before := ""
-		if task.before != "" {
-			before = "After: " + task.before
-		}
-		fmt.Println(" - Starting Task:", task.channel.Name, before)
+		// before := ""
+		// if task.before != "" {
+		// 	before = "After: " + task.before
+		// }
+		// fmt.Println(" - Starting Task:", task.channel.Name, before)
 
 		messages, _ := bot.session.ChannelMessages(task.channel.ID, searchPageSize, task.before, "", "")
 
@@ -119,7 +120,7 @@ func processHistory(bot *Bot) {
 				dingMsg := messages[i+1]
 				if dingMsg.Author.ID != m.Mentions[0].ID {
 					dingMisses = append(dingMisses, fmt.Sprintf("%s: %s", dingMsg.Author.Username, level))
-					fmt.Println("ding missed:", dingMsg.Author.Username, level)
+					// fmt.Println("ding missed:", dingMsg.Author.Username, level)
 					// TODO:
 					// maybe ding miss, (deleted)
 					// maybe chat race
@@ -148,7 +149,7 @@ func processHistory(bot *Bot) {
 					services.UserNames.Set(d.UserID, userName)
 				}
 
-				fmt.Println("Cached level", level, "ding for", dingMsg.Author.Username)
+				// fmt.Println("Cached level", level, "ding for", dingMsg.Author.Username)
 			}
 		}
 
