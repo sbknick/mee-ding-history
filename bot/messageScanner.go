@@ -20,21 +20,21 @@ func (b *Bot) filter(msg *discordgo.MessageCreate, term string) bool {
 
 func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageCreate) {
 	if msg.Author.Bot && msg.Author.ID == b.Mee6.ID {
-		fmt.Println("from mee6")
+		// fmt.Println("from mee6")
 		fmt.Println("msg content:", msg.Message.Content)
 		term := services.SearchTerm.GetSearchTerm(msg.GuildID)
-		fmt.Println("term:", term)
+		// fmt.Println("term:", term)
 		if !b.filter(msg, term) {
-			fmt.Println("filter failed")
+			fmt.Println("filter failed, not a ding?")
 			return
 		}
 
-		fmt.Println("Ding caught.")
+		// fmt.Println("Ding caught.")
 
 		user := msg.Mentions[0]
 		level := extractLevel(msg.Content)
 		dingMessage := b.firstBefore(msg.Message, user)
-		log.Println("First before located.")
+		// log.Println("First before located.")
 		if dingMessage == nil {
 			fmt.Println("dingMessage is nil")
 			return
@@ -56,7 +56,7 @@ func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageC
 				userName = dingMessage.Member.Nick
 			}
 			if userName == "" {
-				userName = user.Username
+				userName = dingMessage.Author.Username
 			}
 			services.UserNames.Set(user.ID, userName)
 		}

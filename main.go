@@ -6,11 +6,12 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/Lukaesebrot/dgc"
 	"github.com/bwmarrin/discordgo"
+	"github.com/lus/dgc"
 
 	"github.com/sbknick/mee-ding-history/bot"
 	"github.com/sbknick/mee-ding-history/cmds"
+	"github.com/sbknick/mee-ding-history/data"
 )
 
 var (
@@ -40,6 +41,8 @@ func main() {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
 	dingBot, _ := bot.New(session)
+
+	data.Init(redisUrl)
 
 	/** **/
 
@@ -72,5 +75,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
+	<-data.Cache.Stop()
+	//.MaxLevels.Cancel()
 	log.Println("OS interrupt received, shutting down.")
 }

@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Lukaesebrot/dgc"
 	"github.com/bwmarrin/discordgo"
+	"github.com/lus/dgc"
+
 	"github.com/sbknick/mee-ding-history/data"
 )
 
@@ -30,6 +31,16 @@ func Ding() *dgc.Command {
 				IgnoreCase: true,
 				Handler:    cancelHandler,
 			},
+			{
+				Name:       "Flush",
+				IgnoreCase: true,
+				Handler:    flushHandler,
+			},
+			{
+				Name:       "Dump",
+				IgnoreCase: true,
+				Handler:    dumpHandler,
+			},
 		},
 	}
 }
@@ -39,6 +50,28 @@ var termHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 		ctx.RespondText(fmt.Sprintf("My current search term is \"%s\"", "unknown"))
 	} else {
 		ctx.RespondText(fmt.Sprintf("Okay, my new search term is \"%s\"", ctx.Arguments.AsSingle().Raw()))
+	}
+}
+
+var flushHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
+	if ctx.Event.Author.ID != "583594630415777802" {
+		return
+	}
+
+	data.Cache.Flush()
+	ctx.RespondText("OK")
+}
+
+var dumpHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
+	if ctx.Event.Author.ID != "583594630415777802" {
+		return
+	}
+
+	d, err := data.Cache.Dump()
+	if err != nil {
+		ctx.RespondText("Error: " + err.Error())
+	} else {
+		ctx.RespondText("Dump: " + d)
 	}
 }
 

@@ -25,6 +25,20 @@ var (
 
 // FullScan initiates a full, deep scan of all guilds and all accessible text channels.
 func (bot *Bot) FullScan() error {
+
+	// afterId := "854040298463297546"
+	// channelId := "565222197199765504"
+	// // guildId := "565201829877514240"
+
+	// messages, err := bot.session.ChannelMessages(channelId, 5, "", afterId, "")
+	// if err != nil {
+	// 	return err
+	// }
+
+	// _ = messages
+
+	// return nil
+
 	if taskQueue != nil {
 		return fmt.Errorf("full Scan already in progress")
 	}
@@ -47,8 +61,9 @@ func scanGuilds(bot *Bot, after string) error {
 	for _, guild := range guilds {
 		fmt.Println("Scanning guild", guild.Name)
 		guildSearchTerm := services.SearchTerm.GetSearchTerm(guild.ID)
+		guildProgress := services.ScanProgress.GetScanProgress(guild.ID)
 
-		scanChannels(bot, guild, guildSearchTerm, "")
+		scanChannels(bot, guild, guildProgress, guildSearchTerm, "")
 	}
 
 	if len(guilds) == searchPageSize {
@@ -58,7 +73,7 @@ func scanGuilds(bot *Bot, after string) error {
 	return nil
 }
 
-func scanChannels(bot *Bot, guild *discordgo.UserGuild, searchTerm string, after string) error {
+func scanChannels(bot *Bot, guild *discordgo.UserGuild, progress services.ProgressByChannel, searchTerm string, after string) error {
 	channels, err := bot.session.GuildChannels(guild.ID)
 	if err != nil {
 		return fmt.Errorf("channel fetch failed for guild: %s\n%v", guild.Name, err)
@@ -76,21 +91,38 @@ func scanChannels(bot *Bot, guild *discordgo.UserGuild, searchTerm string, after
 
 		if p&discordgo.PermissionReadMessageHistory != 0 {
 			// fmt.Println("Initiating channel scan:", channel.Name)
-			scanChannel(channel, searchTerm)
+			pr, ok := progress[channel.ID]
+			task := scanTask{channel: channel, searchTerm: searchTerm}
+			if ok {
+				task.progress.Earliest = pr.Earliest
+				taskQueue <- task
+				task.progress.Earliest = ""
+				task.progress.Latest = pr.Latest
+				taskQueue <- task
+				// task.before = pr.Latest
+				// taskQueue <- task
+				// task.before = ""
+				// task.after = pr.Earliest
+				// taskQueue <- task
+			} else {
+				taskQueue <- task
+			}
 		}
 	}
 
 	return nil
 }
 
-func scanChannel(channel *discordgo.Channel, searchTerm string) {
-	taskQueue <- scanTask{channel: channel}
-}
+// func scanChannel(channel *discordgo.Channel, searchTerm string) {
+// 	taskQueue <- scanTask{channel: channel}
+// }
 
 type scanTask struct {
-	channel    *discordgo.Channel
-	before     string
-	searchTerm string
+	channel *discordgo.Channel
+	// before, after string
+	before, after string
+	progress      services.Progress
+	searchTerm    string
 }
 
 func processHistory(bot *Bot) {
@@ -100,13 +132,17 @@ func processHistory(bot *Bot) {
 	}()
 
 	for task := range taskQueue {
-		// before := ""
-		// if task.before != "" {
-		// 	before = "After: " + task.before
+		// after := task.progress.Latest
+		// if task.progress.Earliest != "" && task.before == "" {
+		// 	task.before = task.progress.Earliest
 		// }
-		// fmt.Println(" - Starting Task:", task.channel.Name, before)
 
 		messages, _ := bot.session.ChannelMessages(task.channel.ID, searchPageSize, task.before, "", "")
+
+		if task.after != "" {
+			messages = reverse(messages)
+		}
+		// if AFTER, go reverse?
 
 		for i, m := range messages {
 			if i < searchPageSize-1 &&
@@ -117,7 +153,17 @@ func processHistory(bot *Bot) {
 				level := extractLevel(m.Content)
 				data.Cache.MaxLevels.Update(m.Mentions[0].ID, task.channel.GuildID, level)
 
-				dingMsg := messages[i+1]
+				var dingMsg *discordgo.Message
+				if task.after != "" {
+					if i == 0 {
+						continue
+						// first message will always be an already-cached Mee6 ding notification
+						// either that, or a non-ding message at the head of a channel
+					}
+					dingMsg = messages[i-1]
+				} else {
+					dingMsg = messages[i+1]
+				}
 				if dingMsg.Author.ID != m.Mentions[0].ID {
 					dingMisses = append(dingMisses, fmt.Sprintf("%s: %s", dingMsg.Author.Username, level))
 					// fmt.Println("ding missed:", dingMsg.Author.Username, level)
@@ -154,7 +200,11 @@ func processHistory(bot *Bot) {
 		}
 
 		if len(messages) == searchPageSize {
-			task.before = messages[searchPageSize-2].ID
+			if task.after != "" {
+				task.after = messages[searchPageSize-2].ID
+			} else {
+				task.before = messages[searchPageSize-2].ID
+			}
 			taskQueue <- task
 		}
 	}
@@ -175,4 +225,12 @@ func extractNumber(input string) string {
 
 func exciseMention(input string) string {
 	return mentionRegex.ReplaceAllString(input, "")
+}
+
+func reverse(in []*discordgo.Message) []*discordgo.Message {
+	for i := 0; i < len(in)/2; i++ {
+		j := len(in) - 1 - i
+		in[i], in[j] = in[j], in[i]
+	}
+	return in
 }

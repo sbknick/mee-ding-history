@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Lukaesebrot/dgc"
 	"github.com/bwmarrin/discordgo"
+	"github.com/lus/dgc"
 
 	"github.com/sbknick/mee-ding-history/data"
 	"github.com/sbknick/mee-ding-history/services"
