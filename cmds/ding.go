@@ -7,7 +7,10 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
 
-	"github.com/sbknick/mee-ding-history/data"
+	"github.com/sbknick/mee-ding-history/data/cache"
+	"github.com/sbknick/mee-ding-history/data/dings"
+	"github.com/sbknick/mee-ding-history/data/maxLevels"
+	"github.com/sbknick/mee-ding-history/data/models"
 )
 
 func Ding() *dgc.Command {
@@ -21,16 +24,16 @@ func Ding() *dgc.Command {
 				IgnoreCase: true,
 				Handler:    dingMeHandler,
 			},
-			{
-				Name:       "Term",
-				IgnoreCase: true,
-				Handler:    termHandler,
-			},
-			{
-				Name:       "Cancel",
-				IgnoreCase: true,
-				Handler:    cancelHandler,
-			},
+			// {
+			// 	Name:       "Term",
+			// 	IgnoreCase: true,
+			// 	Handler:    termHandler,
+			// },
+			// {
+			// 	Name:       "Cancel",
+			// 	IgnoreCase: true,
+			// 	Handler:    cancelHandler,
+			// },
 			{
 				Name:       "Flush",
 				IgnoreCase: true,
@@ -40,6 +43,13 @@ func Ding() *dgc.Command {
 				Name:       "Dump",
 				IgnoreCase: true,
 				Handler:    dumpHandler,
+				SubCommands: []*dgc.Command{
+					{
+						Name:       "Key",
+						IgnoreCase: true,
+						Handler:    dumpKeyHandler,
+					},
+				},
 			},
 		},
 	}
@@ -58,7 +68,7 @@ var flushHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 		return
 	}
 
-	data.Cache.Flush()
+	cache.Flush()
 	ctx.RespondText("OK")
 }
 
@@ -67,12 +77,27 @@ var dumpHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 		return
 	}
 
-	d, err := data.Cache.Dump()
+	d, err := cache.Dump()
 	if err != nil {
 		ctx.RespondText("Error: " + err.Error())
 	} else {
 		ctx.RespondText("Dump: " + d)
 	}
+}
+
+var dumpKeyHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
+	if ctx.Event.Author.ID != "583594630415777802" {
+		return
+	}
+
+	key := ctx.Arguments.Raw()
+
+	d, err := cache.Fetch(key)
+	if err != nil {
+		ctx.RespondText("Error: " + err.Error())
+		return
+	}
+	ctx.RespondText(key + " : " + d)
 }
 
 var cancelHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
@@ -92,14 +117,14 @@ var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	}
 
 	if level == "" {
-		level, ok = data.Cache.MaxLevels.Get(ctx.Event.Author.ID, ctx.Event.GuildID)
+		level, ok = maxLevels.Get(ctx.Event.Author.ID, ctx.Event.GuildID)
 	}
 	if !ok {
 		ctx.RespondText("error")
 		return
 	}
 
-	d := data.Cache.Dings.Get(ctx.Event.Author.ID, ctx.Event.GuildID, level)
+	d := dings.Get(ctx.Event.Author.ID, ctx.Event.GuildID, level)
 	_, err := ctx.Session.ChannelMessage(d.ChannelID, d.MessageID)
 	if err != nil {
 		ctx.RespondText("error")
@@ -112,7 +137,7 @@ var dingUserHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	ctx.RespondText("Dong!")
 }
 
-func reportAsEmbed(ctx *dgc.Ctx, d data.Ding) {
+func reportAsEmbed(ctx *dgc.Ctx, d models.Ding) {
 	desc, err := d.Message.ContentWithMoreMentionsReplaced(ctx.Session)
 	if err != nil {
 		log.Fatal(err)
@@ -147,7 +172,7 @@ func reportAsEmbed(ctx *dgc.Ctx, d data.Ding) {
 	}
 }
 
-func messageLink(d data.Ding) string {
+func messageLink(d models.Ding) string {
 	// `https://discord.com/channels/${this.guild ? this.guild.id : '@me'}/${this.channel.id}/${this.id}`
 	return fmt.Sprintf("https://discord.com/channels/%s/%s/%s", d.GuildID, d.ChannelID, d.MessageID)
 }

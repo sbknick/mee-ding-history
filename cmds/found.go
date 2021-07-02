@@ -7,7 +7,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
 
-	"github.com/sbknick/mee-ding-history/data"
+	"github.com/sbknick/mee-ding-history/data/maxLevels"
 	"github.com/sbknick/mee-ding-history/services"
 )
 
@@ -34,7 +34,7 @@ var levelsHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	ctx.RespondText("Working...")
 
 	guilds := make(map[string]*discordgo.Guild)
-	levels := data.Cache.MaxLevels.All()
+	levels := maxLevels.All()
 	strs := make([]string, 0, len(levels))
 	ctx.RespondText(fmt.Sprintf("Found %d results...", len(levels)))
 

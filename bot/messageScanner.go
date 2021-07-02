@@ -7,7 +7,9 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 
-	"github.com/sbknick/mee-ding-history/data"
+	"github.com/sbknick/mee-ding-history/data/dings"
+	"github.com/sbknick/mee-ding-history/data/maxLevels"
+	"github.com/sbknick/mee-ding-history/data/models"
 	"github.com/sbknick/mee-ding-history/services"
 )
 
@@ -41,14 +43,14 @@ func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageC
 		}
 
 		// services.Memory.Commit(ding)
-		data.Cache.Dings.Put(data.Ding{
+		dings.Put(models.Ding{
 			UserID:    user.ID,
 			GuildID:   msg.GuildID,
 			ChannelID: msg.ChannelID,
 			MessageID: dingMessage.ID,
 			Level:     level,
 		})
-		data.Cache.MaxLevels.Update(user.ID, msg.GuildID, level)
+		maxLevels.Update(user.ID, msg.GuildID, level)
 
 		userName := ""
 		if _, ok := services.UserNames.Get(user.ID); !ok {

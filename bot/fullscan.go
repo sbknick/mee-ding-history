@@ -6,7 +6,10 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/sbknick/mee-ding-history/data"
+
+	"github.com/sbknick/mee-ding-history/data/dings"
+	"github.com/sbknick/mee-ding-history/data/maxLevels"
+	"github.com/sbknick/mee-ding-history/data/models"
 	"github.com/sbknick/mee-ding-history/services"
 )
 
@@ -60,10 +63,7 @@ func scanGuilds(bot *Bot, after string) error {
 
 	for _, guild := range guilds {
 		fmt.Println("Scanning guild", guild.Name)
-		guildSearchTerm := services.SearchTerm.GetSearchTerm(guild.ID)
-		guildProgress := services.ScanProgress.GetScanProgress(guild.ID)
-
-		scanChannels(bot, guild, guildProgress, guildSearchTerm, "")
+		scanGuildChannels(bot, guild)
 	}
 
 	if len(guilds) == searchPageSize {
@@ -73,13 +73,27 @@ func scanGuilds(bot *Bot, after string) error {
 	return nil
 }
 
-func scanChannels(bot *Bot, guild *discordgo.UserGuild, progress services.ProgressByChannel, searchTerm string, after string) error {
+func scanGuildChannels(bot *Bot, guild *discordgo.UserGuild) error {
 	channels, err := bot.session.GuildChannels(guild.ID)
 	if err != nil {
 		return fmt.Errorf("channel fetch failed for guild: %s\n%v", guild.Name, err)
 	}
 
+	searchTerm := services.SearchTerm.GetSearchTerm(guild.ID)
+	progress, ok := services.ScanProgress.GetScanProgress(guild.ID)
+	if !ok {
+		progress = services.ProgressByChannel{}
+	}
+	// if pr == nil {
+	// 	pr = &services.ProgressByChannel{}
+	// }
+	// progress := *pr
+
 	for _, channel := range channels {
+		if channel.ID != "565222197199765504" {
+			continue
+		}
+
 		if channel.Type != discordgo.ChannelTypeGuildText {
 			continue
 		}
@@ -90,27 +104,34 @@ func scanChannels(bot *Bot, guild *discordgo.UserGuild, progress services.Progre
 		}
 
 		if p&discordgo.PermissionReadMessageHistory != 0 {
-			// fmt.Println("Initiating channel scan:", channel.Name)
-			pr, ok := progress[channel.ID]
-			task := scanTask{channel: channel, searchTerm: searchTerm}
-			if ok {
-				task.progress.Earliest = pr.Earliest
-				taskQueue <- task
-				task.progress.Earliest = ""
-				task.progress.Latest = pr.Latest
-				taskQueue <- task
-				// task.before = pr.Latest
-				// taskQueue <- task
-				// task.before = ""
-				// task.after = pr.Earliest
-				// taskQueue <- task
-			} else {
-				taskQueue <- task
-			}
+			enqueueScanTasks(progress, channel, searchTerm)
 		}
 	}
 
 	return nil
+}
+
+func enqueueScanTasks(progress services.ProgressByChannel, channel *discordgo.Channel, searchTerm string) {
+	// fmt.Println("Initiating channel scan:", channel.Name)
+	task := scanTask{channel: channel, searchTerm: searchTerm}
+	pr, ok := progress[channel.ID]
+	if ok {
+		task.before = pr.Earliest
+		// task.progress.Earliest = pr.Earliest
+		taskQueue <- task
+		task.before = ""
+		task.after = pr.Latest
+		// task.progress.Earliest = ""
+		// task.progress.Latest = pr.Latest
+		taskQueue <- task
+		// task.before = pr.Latest
+		// taskQueue <- task
+		// task.before = ""
+		// task.after = pr.Earliest
+		// taskQueue <- task
+	} else {
+		taskQueue <- task
+	}
 }
 
 // func scanChannel(channel *discordgo.Channel, searchTerm string) {
@@ -121,8 +142,8 @@ type scanTask struct {
 	channel *discordgo.Channel
 	// before, after string
 	before, after string
-	progress      services.Progress
-	searchTerm    string
+	// progress      services.Progress
+	searchTerm string
 }
 
 func processHistory(bot *Bot) {
@@ -132,17 +153,22 @@ func processHistory(bot *Bot) {
 	}()
 
 	for task := range taskQueue {
-		// after := task.progress.Latest
-		// if task.progress.Earliest != "" && task.before == "" {
-		// 	task.before = task.progress.Earliest
-		// }
-
-		messages, _ := bot.session.ChannelMessages(task.channel.ID, searchPageSize, task.before, "", "")
-
-		if task.after != "" {
+		pastward := task.after == ""
+		var messages []*discordgo.Message
+		if pastward {
+			messages, _ = bot.session.ChannelMessages(task.channel.ID, searchPageSize, task.before, "", "")
+		} else {
+			messages, _ = bot.session.ChannelMessages(task.channel.ID, searchPageSize, "", task.after, "")
 			messages = reverse(messages)
 		}
-		// if AFTER, go reverse?
+
+		// if !pastward {
+		// 	messages = reverse(messages)
+		// }
+
+		if len(messages) == 0 {
+			return
+		}
 
 		for i, m := range messages {
 			if i < searchPageSize-1 &&
@@ -151,18 +177,18 @@ func processHistory(bot *Bot) {
 				len(m.Mentions) == 1 {
 
 				level := extractLevel(m.Content)
-				data.Cache.MaxLevels.Update(m.Mentions[0].ID, task.channel.GuildID, level)
+				maxLevels.Update(m.Mentions[0].ID, task.channel.GuildID, level)
 
 				var dingMsg *discordgo.Message
-				if task.after != "" {
+				if pastward {
+					dingMsg = messages[i+1]
+				} else { // futureward
 					if i == 0 {
 						continue
 						// first message will always be an already-cached Mee6 ding notification
 						// either that, or a non-ding message at the head of a channel
 					}
 					dingMsg = messages[i-1]
-				} else {
-					dingMsg = messages[i+1]
 				}
 				if dingMsg.Author.ID != m.Mentions[0].ID {
 					dingMisses = append(dingMisses, fmt.Sprintf("%s: %s", dingMsg.Author.Username, level))
@@ -172,7 +198,7 @@ func processHistory(bot *Bot) {
 					// maybe chat race
 				}
 
-				d := data.Ding{
+				d := models.Ding{
 					UserID:  dingMsg.Author.ID,
 					GuildID: task.channel.GuildID,
 					Level:   level,
@@ -182,7 +208,7 @@ func processHistory(bot *Bot) {
 
 					Message: dingMsg,
 				}
-				data.Cache.Dings.Put(d)
+				dings.Put(d)
 
 				if _, ok := services.UserNames.Get(d.UserID); !ok {
 					var userName string
@@ -199,13 +225,23 @@ func processHistory(bot *Bot) {
 			}
 		}
 
+		var high, low *discordgo.Message
+		if pastward {
+			high, low = messages[0], messages[len(messages)-1]
+		} else {
+			low, high = messages[0], messages[len(messages)-1]
+		}
+
+		services.ScanProgress.Update(task.channel.GuildID, task.channel.ID, pastward, high, low)
 		if len(messages) == searchPageSize {
-			if task.after != "" {
-				task.after = messages[searchPageSize-2].ID
-			} else {
+			if pastward {
 				task.before = messages[searchPageSize-2].ID
+			} else {
+				task.after = messages[searchPageSize-2].ID
 			}
 			taskQueue <- task
+		} else {
+			// services.ScanProgress.Update(task.channel.GuildID, task.channel.ID, pastward, messages[0].ID, messages[len(messages)-1].ID, high.Content, low.Content)
 		}
 	}
 }

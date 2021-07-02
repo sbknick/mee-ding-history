@@ -12,6 +12,7 @@ import (
 	"github.com/sbknick/mee-ding-history/bot"
 	"github.com/sbknick/mee-ding-history/cmds"
 	"github.com/sbknick/mee-ding-history/data"
+	"github.com/sbknick/mee-ding-history/services"
 )
 
 var (
@@ -43,20 +44,12 @@ func main() {
 	dingBot, _ := bot.New(session)
 
 	data.Init(redisUrl)
+	services.Init()
 
 	/** **/
 
 	// session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 	// 	log.Print("Ready!")
-	// })
-
-	// session.AddHandler(func(s *discordgo.Session, m *discordgo.MessageCreate) {
-	// 	if m.Author.Bot && m.Author.ID == b.Mee6.ID {
-	// 		term := services.SearchTerm.GetSearchTerm(m.GuildID)
-	// 		if strings.Contains(m.Message.Content, term) {
-	// 			services.Memory.Commit(m.Message)
-	// 		}
-	// 	}
 	// })
 
 	session.AddHandler(dingBot.MessageScanner)
@@ -75,7 +68,6 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
-	<-data.Cache.Stop()
-	//.MaxLevels.Cancel()
+	<-data.Stop()
 	log.Println("OS interrupt received, shutting down.")
 }

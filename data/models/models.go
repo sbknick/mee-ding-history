@@ -1,4 +1,4 @@
-package data
+package models
 
 import (
 	"strings"
@@ -18,7 +18,7 @@ type Ding struct {
 }
 
 func (ding Ding) Key() string {
-	return key(ding.GuildID, ding.UserID, ding.Level)
+	return ToKey(ding.GuildID, ding.UserID, ding.Level)
 }
 
 type MaxLevel struct {
@@ -28,8 +28,16 @@ type MaxLevel struct {
 }
 
 func (ml MaxLevel) Key() string {
-	return key(ml.GuildID, ml.UserID)
+	return ToKey(ml.GuildID, ml.UserID)
 }
+
+type Progress struct {
+	Earliest, Latest              string
+	EarlyTimestamp, LateTimestamp string
+}
+
+type ChannelProgress map[string]Progress
+type GuildProgress map[string]ChannelProgress
 
 type Message struct {
 	UserID    string
@@ -39,6 +47,6 @@ type Message struct {
 	Source    discordgo.Message
 }
 
-func key(args ...string) string {
+func ToKey(args ...string) string {
 	return strings.Join(args, ":")
 }
