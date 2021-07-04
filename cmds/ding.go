@@ -3,6 +3,7 @@ package cmds
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
@@ -24,16 +25,16 @@ func Ding() *dgc.Command {
 				IgnoreCase: true,
 				Handler:    dingMeHandler,
 			},
-			// {
-			// 	Name:       "Term",
-			// 	IgnoreCase: true,
-			// 	Handler:    termHandler,
-			// },
-			// {
-			// 	Name:       "Cancel",
-			// 	IgnoreCase: true,
-			// 	Handler:    cancelHandler,
-			// },
+			{
+				Name:       "Term",
+				IgnoreCase: true,
+				Handler:    termHandler,
+			},
+			{
+				Name:       "Cancel",
+				IgnoreCase: true,
+				Handler:    cancelHandler,
+			},
 			{
 				Name:       "Flush",
 				IgnoreCase: true,
@@ -56,11 +57,11 @@ func Ding() *dgc.Command {
 }
 
 var termHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	if ctx.Arguments.Amount() == 0 {
-		ctx.RespondText(fmt.Sprintf("My current search term is \"%s\"", "unknown"))
-	} else {
-		ctx.RespondText(fmt.Sprintf("Okay, my new search term is \"%s\"", ctx.Arguments.AsSingle().Raw()))
-	}
+	// if ctx.Arguments.Amount() == 0 {
+	// 	ctx.RespondText(fmt.Sprintf("My current search term is \"%s\"", "unknown"))
+	// } else {
+	// 	ctx.RespondText(fmt.Sprintf("Okay, my new search term is \"%s\"", ctx.Arguments.AsSingle().Raw()))
+	// }
 }
 
 var flushHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
@@ -97,7 +98,19 @@ var dumpKeyHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 		ctx.RespondText("Error: " + err.Error())
 		return
 	}
-	ctx.RespondText(key + " : " + d)
+
+	lines := make([]string, 0, 10)
+	for _, str := range d {
+		lines = append(lines, str)
+
+		if len(lines) == 10 {
+			ctx.RespondText(strings.Join(lines, "\n"))
+			lines = lines[:0]
+		}
+	}
+	ctx.RespondText(strings.Join(lines, "\n"))
+
+	// ctx.RespondText(key + " : " + d)
 }
 
 var cancelHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {

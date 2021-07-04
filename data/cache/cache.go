@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -53,6 +54,32 @@ func SaveGuildScanProgress(progress models.ChannelProgress) error {
 	return save("scanprogress", progress)
 }
 
+func save(key string, record interface{}) error {
+	rs, err := redisClient.HMSet(ctx, key, redisify(record)...).Result()
+	_ = rs
+	return err
+}
+
+func GetDing(guildId, userId, level string) (models.Ding, bool) {
+	key := models.ToKey(guildId, userId, level)
+	x := redisClient.HGet(ctx, "dings", key)
+	_ = x
+	rs, err := x.Result()
+	if err != nil {
+		fmt.Println("Error: ", err.Error())
+		return models.Ding{}, false
+	}
+
+	var ding models.Ding
+	err = json.Unmarshal([]byte(rs), &ding)
+	if err != nil {
+		fmt.Println("Error: ", err.Error())
+		return models.Ding{}, false
+	}
+
+	return ding, true
+}
+
 func GetFullScanProgress() (models.GuildProgress, error) {
 	// return nil, nil
 
@@ -67,12 +94,6 @@ func GetFullScanProgress() (models.GuildProgress, error) {
 	e := json.Unmarshal(nil, &progress)
 
 	return progress, e
-}
-
-func save(key string, record interface{}) error {
-	rs, err := redisClient.HMSet(ctx, key, redisify(record)...).Result()
-	_ = rs
-	return err
 }
 
 /** common util **/
@@ -91,9 +112,19 @@ func Dump() (string, error) {
 	return strings.Join(v, " "), nil
 }
 
-func Fetch(key string) (string, error) {
-	x := redisClient.Dump(ctx, key)
-	return x.Result()
+func Fetch(key string) ([]string, error) {
+	x := redisClient.HGetAll(ctx, key)
+	rs, err := x.Result()
+	if err != nil {
+		panic("")
+	}
+
+	out := make([]string, 0, len(rs))
+	for k, v := range rs {
+		out = append(out, k+" :: "+v)
+	}
+
+	return out, nil
 }
 
 func redisify(coll interface{}) []interface{} {

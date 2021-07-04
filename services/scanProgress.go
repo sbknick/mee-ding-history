@@ -60,22 +60,24 @@ func (scanProgress) GetScanProgress(guildID string) (ProgressByChannel, bool) {
 }
 
 func (scanProgress) Update(guildID, channelID string, isPastward bool, high, low *discordgo.Message) {
-	// pbc := ScanProgress.GetScanProgress(guildID)
 	pbc, ok := guildProgress[guildID]
 	if !ok {
 		pbc = make(ProgressByChannel)
 		guildProgress[guildID] = pbc
 	}
+
 	cpr, ok := pbc[channelID]
 	if !ok {
-		cpr = Progress{Progress: models.Progress{
-			Latest:   high.ID,
-			Earliest: low.ID,
-		},
+		cpr = Progress{
+			Progress: models.Progress{
+				Earliest:       low.ID,
+				Latest:         high.ID,
+				EarlyTimestamp: string(low.Timestamp),
+				LateTimestamp:  string(high.Timestamp),
+			},
 			LatestContent:   high.Content,
 			EarliestContent: low.Content,
 		}
-		pbc[channelID] = cpr
 	} else {
 		if isPastward {
 			cpr.Earliest = low.ID
@@ -86,30 +88,8 @@ func (scanProgress) Update(guildID, channelID string, isPastward bool, high, low
 			cpr.LatestContent = high.Content
 			cpr.LateTimestamp = string(low.Timestamp)
 		}
-		// if pr.Latest != "" {
-		// 	cpr.Latest = low
-		// }
-		// if pr.Earliest != "" {
-		// 	cpr.Earliest = low
-		// }
-		pbc[channelID] = cpr
 	}
+	pbc[channelID] = cpr
 
-	// var gp models.ChannelProgress = toGuildPro()
 	sp.Put(guildID, channelID, cpr.Progress)
 }
-
-// func toGuildPro() models.ChannelProgress {
-// 	guildPr := make(models.ChannelProgress)
-
-// 	for k, v := range guildProgress {
-// 		x := make(map[string]models.Progress)
-// 		guildPr[k] = x
-
-// 		for k, v := range v {
-// 			x[k] = v.Progress
-// 		}
-// 	}
-
-// 	return guildPr
-// }

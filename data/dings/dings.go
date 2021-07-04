@@ -1,6 +1,7 @@
 package dings
 
 import (
+	"github.com/sbknick/mee-ding-history/data/cache"
 	"github.com/sbknick/mee-ding-history/data/models"
 )
 
@@ -11,9 +12,20 @@ import (
 var dingMap map[string]models.Ding = make(map[string]models.Ding)
 
 func Get(userId string, guildId string, level string) models.Ding {
-	return dingMap[models.ToKey(guildId, userId, level)]
+	d, ok := dingMap[models.ToKey(guildId, userId, level)]
+	if ok {
+		return d
+	}
+
+	d, ok = cache.GetDing(guildId, userId, level)
+	if ok {
+		return d
+	}
+
+	return models.Ding{}
 }
 
-func Put(ding models.Ding) {
+func Put(ding models.Ding) error {
 	dingMap[ding.Key()] = ding
+	return cache.SaveDings([]models.Ding{ding})
 }
