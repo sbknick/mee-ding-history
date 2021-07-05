@@ -17,12 +17,14 @@ const (
 	dvAddDing
 	dvUpdateMaxLevel
 	dvUpdateProgress
+
+	maxDings = 20
 )
 
 type (
 	driverMsg struct {
 		msgType  driverMsgType
-		ding     models.Ding
+		ding     *models.Ding
 		maxLevel models.MaxLevel
 		progress struct {
 			models.Progress
@@ -38,7 +40,7 @@ var (
 	driverCh chan driverMsg
 )
 
-func (dv) AddDing(ding models.Ding) {
+func (dv) AddDing(ding *models.Ding) {
 	driverCh <- driverMsg{
 		msgType: dvAddDing,
 		ding:    ding,
@@ -68,7 +70,7 @@ func (dv) init() {
 
 	go func() {
 		var (
-			dings     = make([]models.Ding, 10)
+			dings     = make([]*models.Ding, 0, maxDings)
 			maxLevels = make(map[string]models.MaxLevel)
 			progress  = make(models.ChannelProgress)
 
@@ -83,7 +85,7 @@ func (dv) init() {
 			}
 		)
 
-		commitTimer := time.NewTicker(time.Minute * 10)
+		commitTimer := time.NewTicker(time.Minute * 1) // 10)
 		for {
 			select {
 			case msg, ok := <-driverCh:
@@ -94,6 +96,10 @@ func (dv) init() {
 				switch msg.msgType {
 				case dvAddDing:
 					dings = append(dings, msg.ding)
+					if len(dings) == maxDings {
+						driver.commit(dings, nil, nil, nil)
+						dings = dings[:0]
+					}
 				case dvUpdateMaxLevel:
 					maxLevels[msg.maxLevel.Key()] = msg.maxLevel
 				case dvUpdateProgress:
@@ -121,7 +127,7 @@ func (dv) cancel() {
 	<-done
 }
 
-func (dv) commit(dings []models.Ding, maxLevels map[string]models.MaxLevel, progress models.ChannelProgress, done chan<- struct{}) {
+func (dv) commit(dings []*models.Ding, maxLevels map[string]models.MaxLevel, progress models.ChannelProgress, done chan<- struct{}) {
 	// do the things
 	if len(dings) > 0 {
 		cache.SaveDings(dings)

@@ -34,7 +34,7 @@ func Init(redisUrl string, contxt context.Context) {
 func Cancel() {
 }
 
-func SaveDings(dings []models.Ding) error {
+func SaveDings(dings []*models.Ding) error {
 	return save("dings", dings)
 }
 
@@ -60,21 +60,21 @@ func save(key string, record interface{}) error {
 	return err
 }
 
-func GetDing(guildId, userId, level string) (models.Ding, bool) {
+func GetDing(guildId, userId, level string) (*models.Ding, bool) {
 	key := models.ToKey(guildId, userId, level)
 	x := redisClient.HGet(ctx, "dings", key)
 	_ = x
 	rs, err := x.Result()
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
-		return models.Ding{}, false
+		return nil, false
 	}
 
-	var ding models.Ding
-	err = json.Unmarshal([]byte(rs), &ding)
+	var ding *models.Ding
+	err = json.Unmarshal([]byte(rs), ding)
 	if err != nil {
 		fmt.Println("Error: ", err.Error())
-		return models.Ding{}, false
+		return nil, false
 	}
 
 	return ding, true
@@ -112,7 +112,7 @@ func Dump() (string, error) {
 	return strings.Join(v, " "), nil
 }
 
-func Fetch(key string) ([]string, error) {
+func FetchAllRecordsForKey(key string) ([]string, error) {
 	x := redisClient.HGetAll(ctx, key)
 	rs, err := x.Result()
 	if err != nil {

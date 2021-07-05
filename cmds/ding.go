@@ -3,7 +3,6 @@ package cmds
 import (
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/lus/dgc"
@@ -13,6 +12,8 @@ import (
 	"github.com/sbknick/mee-ding-history/data/maxLevels"
 	"github.com/sbknick/mee-ding-history/data/models"
 )
+
+var cancelled chan struct{}
 
 func Ding() *dgc.Command {
 	return &dgc.Command{
@@ -49,6 +50,11 @@ func Ding() *dgc.Command {
 						Name:       "Key",
 						IgnoreCase: true,
 						Handler:    dumpKeyHandler,
+					},
+					{
+						Name:       "Ding",
+						IgnoreCase: true,
+						Handler:    dumpDingHandler,
 					},
 				},
 			},
@@ -93,28 +99,57 @@ var dumpKeyHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 
 	key := ctx.Arguments.Raw()
 
-	d, err := cache.Fetch(key)
+	d, err := cache.FetchAllRecordsForKey(key)
 	if err != nil {
 		ctx.RespondText("Error: " + err.Error())
 		return
 	}
-
-	lines := make([]string, 0, 10)
+	if cancelled == nil {
+		cancelled = make(chan struct{})
+	}
 	for _, str := range d {
-		lines = append(lines, str)
-
-		if len(lines) == 10 {
-			ctx.RespondText(strings.Join(lines, "\n"))
-			lines = lines[:0]
+		ctx.RespondText(str)
+		select {
+		case <-cancelled:
+			cancelled = nil // naive, can cause panics if there's multiple cancellable processes running in parallel
+			return
+		default:
 		}
 	}
-	ctx.RespondText(strings.Join(lines, "\n"))
+
+	// lines := make([]string, 0, 5)
+	// for _, str := range d {
+	// 	lines = append(lines, str)
+
+	// 	if len(lines) == 5 {
+	// 		ctx.RespondText(strings.Join(lines, "\n"))
+	// 		lines = lines[:0]
+	// 	}
+	// }
+	// ctx.RespondText(strings.Join(lines, "\n"))
 
 	// ctx.RespondText(key + " : " + d)
 }
 
+var dumpDingHandler dgc.ExecutionHandler = authorizedCommand(func(ctx *dgc.Ctx) {
+	userId := ctx.Arguments.Get(0).Raw()
+	guildId := ctx.Arguments.Get(1).Raw()
+	level := ctx.Arguments.Get(2).Raw()
+
+	d, ok := cache.GetDing(guildId, userId, level)
+	if !ok {
+		ctx.RespondText("Error: No ding in memory")
+		return
+	}
+
+	ctx.RespondText(fmt.Sprintf("%v", d))
+})
+
 var cancelHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	ctx.RespondText("You have been cancelled.")
+	if cancelled != nil {
+		close(cancelled)
+	}
 }
 
 var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
@@ -138,11 +173,11 @@ var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	}
 
 	d := dings.Get(ctx.Event.Author.ID, ctx.Event.GuildID, level)
-	_, err := ctx.Session.ChannelMessage(d.ChannelID, d.MessageID)
-	if err != nil {
-		ctx.RespondText("error")
-		return
-	}
+	// _, err := ctx.Session.ChannelMessage(d.ChannelID, d.MessageID)
+	// if err != nil {
+	// 	ctx.RespondText("error")
+	// 	return
+	// }
 	reportAsEmbed(ctx, d)
 }
 
@@ -150,7 +185,7 @@ var dingUserHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	ctx.RespondText("Dong!")
 }
 
-func reportAsEmbed(ctx *dgc.Ctx, d models.Ding) {
+func reportAsEmbed(ctx *dgc.Ctx, d *models.Ding) {
 	desc, err := d.Message.ContentWithMoreMentionsReplaced(ctx.Session)
 	if err != nil {
 		log.Fatal(err)
@@ -185,7 +220,7 @@ func reportAsEmbed(ctx *dgc.Ctx, d models.Ding) {
 	}
 }
 
-func messageLink(d models.Ding) string {
+func messageLink(d *models.Ding) string {
 	// `https://discord.com/channels/${this.guild ? this.guild.id : '@me'}/${this.channel.id}/${this.id}`
 	return fmt.Sprintf("https://discord.com/channels/%s/%s/%s", d.GuildID, d.ChannelID, d.MessageID)
 }

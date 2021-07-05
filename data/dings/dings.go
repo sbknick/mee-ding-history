@@ -9,9 +9,9 @@ import (
 
 // type dings struct{}
 
-var dingMap map[string]models.Ding = make(map[string]models.Ding)
+var dingMap map[string]*models.Ding = make(map[string]*models.Ding)
 
-func Get(userId string, guildId string, level string) models.Ding {
+func Get(userId string, guildId string, level string) *models.Ding {
 	d, ok := dingMap[models.ToKey(guildId, userId, level)]
 	if ok {
 		return d
@@ -22,10 +22,10 @@ func Get(userId string, guildId string, level string) models.Ding {
 		return d
 	}
 
-	return models.Ding{}
+	return nil
 }
 
-func Put(ding models.Ding) error {
+func Put(ding *models.Ding) error {
 	dingMap[ding.Key()] = ding
-	return cache.SaveDings([]models.Ding{ding})
+	return cache.SaveDings([]*models.Ding{ding})
 }

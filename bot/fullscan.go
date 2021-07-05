@@ -198,7 +198,7 @@ func processHistory(bot *Bot) {
 					// maybe chat race
 				}
 
-				d := models.Ding{
+				d := &models.Ding{
 					UserID:  dingMsg.Author.ID,
 					GuildID: task.channel.GuildID,
 					Level:   level,

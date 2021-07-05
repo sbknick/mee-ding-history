@@ -43,7 +43,7 @@ func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageC
 		}
 
 		// services.Memory.Commit(ding)
-		dings.Put(models.Ding{
+		dings.Put(&models.Ding{
 			UserID:    user.ID,
 			GuildID:   msg.GuildID,
 			ChannelID: msg.ChannelID,

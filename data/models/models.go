@@ -14,7 +14,7 @@ type Ding struct {
 	MessageID string
 	ChannelID string
 
-	Message *discordgo.Message
+	Message *discordgo.Message `json:"-"`
 }
 
 func (ding Ding) Key() string {
