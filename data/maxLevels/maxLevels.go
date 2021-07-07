@@ -3,6 +3,7 @@ package maxLevels
 import (
 	"strconv"
 
+	"github.com/sbknick/mee-ding-history/data"
 	"github.com/sbknick/mee-ding-history/data/models"
 )
 
@@ -29,9 +30,11 @@ func Update(userID string, guildId string, level string) {
 		n, _ := strconv.Atoi(maxLevel.Level)
 		if n > c {
 			maxLevelMap[key] = maxLevel
+			data.Driver.UpdateMaxLevel(maxLevel)
 		}
 	} else {
 		maxLevelMap[key] = maxLevel
+		data.Driver.UpdateMaxLevel(maxLevel)
 	}
 }
 

@@ -7,9 +7,9 @@ import (
 	"github.com/sbknick/mee-ding-history/data/models"
 )
 
-var driver dv
+var Driver driver
 
-type dv struct{}
+type driver struct{}
 
 const (
 	_                      = iota
@@ -26,11 +26,13 @@ type (
 		msgType  driverMsgType
 		ding     *models.Ding
 		maxLevel models.MaxLevel
-		progress struct {
-			models.Progress
-			guildID, channelID string
-		}
-		done chan<- struct{}
+		progress driverProgress
+		done     chan<- struct{}
+	}
+
+	driverProgress struct {
+		models.Progress
+		guildID, channelID string
 	}
 
 	driverMsgType int8
@@ -40,32 +42,43 @@ var (
 	driverCh chan driverMsg
 )
 
-func (dv) AddDing(ding *models.Ding) {
+func (driver) AddDing(ding *models.Ding) {
 	driverCh <- driverMsg{
 		msgType: dvAddDing,
 		ding:    ding,
 	}
 }
 
-func (dv) UpdateMaxLevel(maxLevel models.MaxLevel) {
+func (driver) UpdateMaxLevel(maxLevel models.MaxLevel) {
 	driverCh <- driverMsg{
 		msgType:  dvUpdateMaxLevel,
 		maxLevel: maxLevel,
 	}
 }
 
-func (dv) UpdateScanProgress(progress models.Progress, guildID, channelID string) {
-	driverCh <- driverMsg{
+func (driver) UpdateScanProgress(progress models.Progress, guildID, channelID string) {
+	msg := driverMsg{
 		msgType: dvUpdateProgress,
-		progress: struct {
-			models.Progress
-			guildID   string
-			channelID string
-		}{progress, guildID, channelID},
+		progress: driverProgress{
+			Progress:  progress,
+			guildID:   guildID,
+			channelID: channelID,
+		},
 	}
+
+	// for k, v := range progress {
+	// 	pg := driverProgress{
+	// 		Progress:  v,
+	// 		guildID:   guildID,
+	// 		channelID: k,
+	// 	}
+	// 	msg.progress = append(msg.progress, pg)
+	// }
+
+	driverCh <- msg
 }
 
-func (dv) init() {
+func (driver) init() {
 	driverCh = make(chan driverMsg, 20)
 
 	go func() {
@@ -94,30 +107,36 @@ func (dv) init() {
 				}
 
 				switch msg.msgType {
+
 				case dvAddDing:
 					dings = append(dings, msg.ding)
 					if len(dings) == maxDings {
-						driver.commit(dings, nil, nil, nil)
+						Driver.commit(dings, nil, nil, nil)
 						dings = dings[:0]
 					}
+
 				case dvUpdateMaxLevel:
 					maxLevels[msg.maxLevel.Key()] = msg.maxLevel
+
 				case dvUpdateProgress:
+					// for _, v := range msg.progress {
 					progress[models.ToKey(msg.progress.guildID, msg.progress.channelID)] = msg.progress.Progress
+					// }
+
 				case dvFinish:
-					driver.commit(dings, maxLevels, progress, msg.done)
+					Driver.commit(dings, maxLevels, progress, msg.done)
 					defer close(msg.done)
 				}
 
 			case <-commitTimer.C:
-				driver.commit(dings, maxLevels, progress, nil)
+				Driver.commit(dings, maxLevels, progress, nil)
 				reset()
 			}
 		}
 	}()
 }
 
-func (dv) cancel() {
+func (driver) cancel() {
 	done := make(chan struct{})
 	driverCh <- driverMsg{
 		msgType: dvFinish,
@@ -127,17 +146,24 @@ func (dv) cancel() {
 	<-done
 }
 
-func (dv) commit(dings []*models.Ding, maxLevels map[string]models.MaxLevel, progress models.ChannelProgress, done chan<- struct{}) {
+func (driver) commit(dings []*models.Ding, maxLevels map[string]models.MaxLevel, progress models.ChannelProgress, done chan<- struct{}) {
+	batch := cache.NewBatch()
+
 	// do the things
 	if len(dings) > 0 {
-		cache.SaveDings(dings)
+		// cache.SaveDings(dings)
+		batch.SaveDings(dings)
 	}
 	if len(maxLevels) > 0 {
-		cache.SaveMaxLevels(maxLevels)
+		// cache.SaveMaxLevels(maxLevels)
+		batch.SaveMaxLevels(maxLevels)
 	}
 	if len(progress) > 0 {
-		cache.SaveGuildScanProgress(progress)
+		// cache.SaveGuildScanProgress(progress)
+		batch.SaveGuildScanProgress(progress)
 	}
+
+	batch.Execute()
 
 	if done != nil {
 		close(done)

@@ -132,8 +132,8 @@ var dumpKeyHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 }
 
 var dumpDingHandler dgc.ExecutionHandler = authorizedCommand(func(ctx *dgc.Ctx) {
-	userId := ctx.Arguments.Get(0).Raw()
-	guildId := ctx.Arguments.Get(1).Raw()
+	guildId := ctx.Arguments.Get(0).Raw()
+	userId := ctx.Arguments.Get(1).Raw()
 	level := ctx.Arguments.Get(2).Raw()
 
 	d, ok := cache.GetDing(guildId, userId, level)

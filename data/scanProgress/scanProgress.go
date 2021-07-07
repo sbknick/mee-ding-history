@@ -1,6 +1,7 @@
 package scanProgress
 
 import (
+	"github.com/sbknick/mee-ding-history/data"
 	"github.com/sbknick/mee-ding-history/data/cache"
 	"github.com/sbknick/mee-ding-history/data/models"
 )
@@ -24,8 +25,10 @@ func Put(guildID, channelID string, progress models.Progress) error {
 	// 	return
 	// }
 
-	pr := models.ChannelProgress{models.ToKey(guildID, channelID): progress}
-	return cache.SaveGuildScanProgress(pr)
+	// pr := models.ChannelProgress{models.ToKey(guildID, channelID): progress}
+	data.Driver.UpdateScanProgress(progress, guildID, channelID)
+	return nil
+	// return cache.SaveGuildScanProgress(pr)
 
 	// redisClient.Set(ctx, "fullscan-progress", b, 0)
 }

@@ -14,12 +14,11 @@ var (
 func Init(redisUrl string) {
 	ctx, cancelFn = context.WithCancel(context.Background())
 	cache.Init(redisUrl, ctx)
-	driver.init()
-
+	Driver.init()
 }
 
 func Stop() <-chan struct{} {
-	driver.cancel()
+	Driver.cancel()
 	cache.Cancel()
 	return ctx.Done()
 }
