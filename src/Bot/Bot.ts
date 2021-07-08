@@ -20,7 +20,7 @@ export class Bot {
             this.client.user.setUsername("Ding-Bot");
 
             // I really hope MEE6 uses the same userID across Guilds...
-            this.mee6 = await this.client.fetchUser("159985870458322944");
+            this.mee6 = await this.client.users.fetch("159985870458322944");
 
             if (!this.mee6) {
                 logger.error("Unable to find MEE6! :sob:");

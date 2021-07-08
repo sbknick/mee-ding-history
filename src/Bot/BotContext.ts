@@ -47,7 +47,7 @@ export class BotContext extends OnComplete {
     public readonly send = {
         reply: (response: string) => this.msg.source.reply(response),
         dm: (response: string) => this.msg.source.author.send(response),
-        cleanReply: (response: string) => this.msg.source.reply(response).then((m: Discord.Message) => m.delete(5 * 60 * 1000)),
+        cleanReply: (response: string) => this.msg.source.reply(response).then((m: Discord.Message) => m.delete({timeout: 5 * 60 * 1000})),
 
         replySorry: () => this.send.reply(" sorry, I can't find that. :sob:"),
 
@@ -55,9 +55,9 @@ export class BotContext extends OnComplete {
             const msg = ding.message || await this.fetch.message(ding);
 
             if (msg) {
-                const embed = new Discord.RichEmbed()
+                const embed = new Discord.MessageEmbed()
                     .setColor(0x42b983)
-                    .setAuthor(msg.guild.member(msg.author).displayName, msg.author.displayAvatarURL)
+                    .setAuthor(msg.guild.member(msg.author).displayName, msg.author.displayAvatarURL())
                     .setTitle(`Level ${ding.level}`)
                     .setDescription(msg.content)
                     .addField('\u200b', `[Jump to...](${msg.url})`)
@@ -75,9 +75,9 @@ export class BotContext extends OnComplete {
             }
         },
 
-        replyEmbed: (embed: Discord.RichEmbed) => this.msg.source.reply(embed),
+        replyEmbed: (embed: Discord.MessageEmbed) => this.msg.source.reply(embed),
 
-        batchReply: async (content: (string | Discord.RichEmbed)[]) => {
+        batchReply: async (content: (string | Discord.MessageEmbed)[]) => {
             for (const x of content) {
                 await this.msg.source.reply(x);
             }
@@ -92,10 +92,10 @@ export class BotContext extends OnComplete {
             new MemberLevelSearch(this, this.msg.source, member, this.termHandler.getTerm()),
         
         message: (ding: Ding) => {
-            return (this.msg.source.guild.channels.get(ding.channelID) as TextChannel)
-                .fetchMessage(ding.messageID);
+            return (this.msg.source.guild.channels.cache.get(ding.channelID) as TextChannel)
+                .messages.fetch(ding.messageID);
         },
     }
     
-    private respondWithoutQuote = (embed: Discord.RichEmbed) => this.msg.source.channel.send({ embed });
+    private respondWithoutQuote = (embed: Discord.MessageEmbed) => this.msg.source.channel.send({ embed });
 }

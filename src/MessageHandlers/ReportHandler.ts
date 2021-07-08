@@ -87,23 +87,23 @@ export class ReportHandler {
                     cachedItems.set(snowflake, await (async () => {
                         switch (type) {
                             case "guild":
-                                return this.client.guilds.get(snowflake);
+                                return this.client.guilds.cache.get(snowflake);
                             
                             case "member":
                                 {
                                     let guild = <Discord.Guild>cachedItems.get(item.guildID);
-                                    return guild.members.get(snowflake);
+                                    return guild.members.cache.get(snowflake);
                                 }
 
                             case "channel":
                                 {
                                     let guild = <Discord.Guild>cachedItems.get(item.guildID);
-                                    return <TextChannel>guild.channels.get(snowflake);
+                                    return <TextChannel>guild.channels.cache.get(snowflake);
                                 }
 
                             case "message": 
                                 let channel = <TextChannel>cachedItems.get((item as Ding).channelID);
-                                return await channel.fetchMessage(snowflake);
+                                return await channel.messages.fetch(snowflake);
                         }
                    })()).get(snowflake);
             };

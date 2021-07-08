@@ -81,26 +81,32 @@ export class DeepSearch extends OnComplete {
     }
 
     private getGuildTextChannels() {
-        const channels = this.msg.guild.channels.filter(ch => ch.type === "text");
+        const channels = this.msg.guild.channels.cache.filter(ch => ch.type === "text");
         return channels.map(ch => <TextChannel>ch);
     }
 
     private async fetchMatchingMessages(userID: Discord.Snowflake, channel: Discord.TextChannel, before: string): Promise<MatchingMessagesTuple> {
-        const messages = await channel.fetchMessages({
-            limit: Common.searchPageSize,
-            before,
-        });
-
-        const keepGoing = messages.size > 0;
-        const newBefore = keepGoing && this.oldest(messages.array()).id;
-
-        this.progress.done += messages.size;
-
-        return [
-            messages.filter(this.messageFilter(userID)).map(m => m),
-            keepGoing,
-            newBefore
-        ];
+        try {
+            
+            const messages = await channel.messages.fetch({
+                limit: Common.searchPageSize,
+                before,
+            });
+            
+            const keepGoing = messages.size > 0;
+            const newBefore = keepGoing && this.oldest(messages.array()).id;
+            
+            this.progress.done += messages.size;
+            
+            return [
+                messages.filter(this.messageFilter(userID)).map(m => m),
+                keepGoing,
+                newBefore
+            ];
+        }
+        catch (e) {
+            logger.error(e)
+        }
     }
     
     private messageFilter = (userID: Discord.Snowflake) => (msg: Discord.Message) =>
@@ -111,7 +117,7 @@ export class DeepSearch extends OnComplete {
         Common.extractNumber(msg.cleanContent) === this.level;
 
     private async fetchPreviousMessage(msg: Discord.Message) {
-        let drilldownMessages = await msg.channel.fetchMessages({
+        let drilldownMessages = await msg.channel.messages.fetch({
             limit: 1,
             before: msg.id,
         });
