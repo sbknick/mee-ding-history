@@ -15,8 +15,6 @@ type (
 	ProgressByChannel map[string]Progress
 	Progress          struct {
 		models.Progress
-		// Latest                         string
-		// Earliest                       string
 		LatestContent, EarliestContent string
 	}
 )
@@ -30,7 +28,6 @@ func Init() {
 	var err error
 	guildPr, err = sp.Fetch()
 	if err != nil {
-		// panic(err.Error())
 		guildPr = make(models.GuildProgress)
 	}
 
@@ -46,13 +43,6 @@ func Init() {
 		}
 	}
 }
-
-// func init() {
-// 	pbc := make(ProgressByChannel)
-// 	pbc["565222197199765504"] = Progress{data.Progress{"855463868078882816", "855463868078882816"},
-// 		"Get some druggies", "Get some druggies"}
-// 	guildProgress["565201829877514240"] = pbc
-// }
 
 func (scanProgress) GetScanProgress(guildID string) (ProgressByChannel, bool) {
 	pbc, ok := guildProgress[guildID]

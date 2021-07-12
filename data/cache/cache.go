@@ -12,8 +12,6 @@ import (
 	"github.com/sbknick/mee-ding-history/data/models"
 )
 
-// var Cache cache
-
 type Batch struct {
 	pipeline redis.Pipeliner
 }
@@ -81,57 +79,13 @@ func (b *Batch) SaveGuildScanProgress(progress models.ChannelProgress) {
 	// b.pipeline.Expire(ctx, "scanprogress", 0)
 }
 
-// func SaveDings(dings []*models.Ding) error {
-// 	// p.HSet
-// 	// p := redisClient.Pipeline()
-// 	// addSaveValue(p, "dings")
-
-// 	return saveHash("dings", dings)
-// }
-
-// func SaveMaxLevels(maxLevels map[string]models.MaxLevel) error {
-// 	return saveHash("maxlevels", maxLevels)
-// }
-
-// func SaveGuildScanProgress(progress models.ChannelProgress) error {
-// 	// // x := make(map[string]models.Progress)
-// 	// // for c, v := range progress {
-// 	// // 	x[models.ToKey(guildID, c)] = v
-// 	// // }
-// 	// x := redisClient.HMSet(ctx, "scanprogress", progress)
-// 	// rs, err := x.Result()
-// 	// _ = rs
-// 	// return err
-// 	return saveHash("scanprogress", progress)
-// }
-
-// func saveValue(key, value string) error {
-// 	x := redisClient.Set(ctx, key, value, 0)
-// 	_ = x
-// 	return nil
-// }
-
-// func saveHash(key string, record interface{}) error {
-// 	rs, err := redisClient.HSet(ctx, key, redisify(record)...).Result()
-// 	_ = rs
-// 	return err
-// }
-
-// func getValue(key string) (string, error) {
-// 	p := redisClient.Pipeline()
-// 	x := p.Get(ctx, key)
-// 	p.Expire(ctx, key, time.Hour*24*7)
-// 	rs, err := x.Result()
-// 	return rs, err
-// }
-
 func GetDing(guildId, userId, level string) (*models.Ding, bool) {
 	key := "{dings}" + models.ToKey(guildId, userId, level)
-	p := redisClient.Pipeline()
-	x := p.Get(ctx, key)
-	// _ = x
-	p.Expire(ctx, key, TIME_TO_LIVE)
-	p.Exec(ctx)
+	pipe := redisClient.Pipeline()
+	x := pipe.Get(ctx, key)
+
+	pipe.Expire(ctx, key, TIME_TO_LIVE)
+	pipe.Exec(ctx)
 
 	rs, err := x.Result()
 	if err != nil {
@@ -149,56 +103,52 @@ func GetDing(guildId, userId, level string) (*models.Ding, bool) {
 	return &ding, true
 }
 
-// func GetDing(guildId, userId, level string) (*models.Ding, bool) {
-// 	key := models.ToKey(guildId, userId, level)
-// 	x := redisClient.HGet(ctx, "dings", key)
-// 	_ = x
-// 	rs, err := x.Result()
-// 	if err != nil {
-// 		fmt.Println("Error: ", err.Error())
-// 		return nil, false
-// 	}
-
-// 	var ding *models.Ding
-// 	err = json.Unmarshal([]byte(rs), ding)
-// 	if err != nil {
-// 		fmt.Println("Error: ", err.Error())
-// 		return nil, false
-// 	}
-
-// 	return ding, true
-// }
-
 func GetFullScanProgress() (models.GuildProgress, error) {
-	// return nil, nil
-
 	x := redisClient.HGetAll(ctx, "scanprogress")
 	rs, err := x.Result()
 	if err != nil {
 		return nil, err
 	}
 
-	_ = rs
-	var progress models.GuildProgress
-	e := json.Unmarshal(nil, &progress)
+	progress := make(models.GuildProgress)
+	for k, v := range rs {
+		x := models.SplitKey(k)
+		guildId, channelId := x[0], x[1]
 
-	return progress, e
+		gProg, ok := progress[guildId]
+		if !ok {
+			gProg = make(models.ChannelProgress)
+			progress[guildId] = gProg
+		}
+
+		var p models.Progress
+		if err := json.Unmarshal([]byte(v), &p); err != nil {
+			return nil, err
+		}
+
+		gProg[channelId] = p
+	}
+
+	return progress, nil
 }
 
 func GetMaxLevels() (map[string]models.MaxLevel, error) {
-	// return nil, nil
-
 	x := redisClient.HGetAll(ctx, "maxlevels")
 	rs, err := x.Result()
 	if err != nil {
 		return nil, err
 	}
 
-	_ = rs
-	var maxLevels map[string]models.MaxLevel
-	e := json.Unmarshal(nil, &maxLevels)
+	maxLevels := make(map[string]models.MaxLevel, len(rs))
+	for k, v := range rs {
+		var ml models.MaxLevel
+		if err := json.Unmarshal([]byte(v), &ml); err != nil {
+			return nil, err
+		}
 
-	return maxLevels, e
+		maxLevels[k] = ml
+	}
+	return maxLevels, nil
 }
 
 /** common util **/
@@ -254,8 +204,3 @@ func redisify(coll interface{}) []interface{} {
 
 	return vals
 }
-
-// func heighten(m map[string]string) map[string]models.MaxLevel {
-// 	ml := make(map[string]models.MaxLevel, len(m))
-// 	return ml
-// }

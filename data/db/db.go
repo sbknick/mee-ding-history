@@ -1,13 +1,13 @@
 package db
 
-import (
-	"database/sql"
-)
+// import (
+// 	"database/sql"
+// )
 
-func New(connStr string) *sql.DB {
-	_, _ = sql.Open("postgres", connStr)
-	// defer db.Close()
-	// pg.AfterDeleteHook
+// func New(connStr string) *sql.DB {
+// 	_, _ = sql.Open("postgres", connStr)
+// 	// defer db.Close()
+// 	// pg.AfterDeleteHook
 
-	return nil
-}
+// 	return nil
+// }

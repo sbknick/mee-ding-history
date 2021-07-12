@@ -39,22 +39,22 @@ func Ding() *dgc.Command {
 			{
 				Name:       "Flush",
 				IgnoreCase: true,
-				Handler:    flushHandler,
+				Handler:    authorizedCommand(flushHandler),
 			},
 			{
 				Name:       "Dump",
 				IgnoreCase: true,
-				Handler:    dumpHandler,
+				Handler:    authorizedCommand(dumpHandler),
 				SubCommands: []*dgc.Command{
 					{
 						Name:       "Key",
 						IgnoreCase: true,
-						Handler:    dumpKeyHandler,
+						Handler:    authorizedCommand(dumpKeyHandler),
 					},
 					{
 						Name:       "Ding",
 						IgnoreCase: true,
-						Handler:    dumpDingHandler,
+						Handler:    authorizedCommand(dumpDingHandler),
 					},
 				},
 			},
@@ -71,19 +71,11 @@ var termHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 }
 
 var flushHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	if ctx.Event.Author.ID != "583594630415777802" {
-		return
-	}
-
 	cache.Flush()
 	ctx.RespondText("OK")
 }
 
 var dumpHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	if ctx.Event.Author.ID != "583594630415777802" {
-		return
-	}
-
 	d, err := cache.Dump()
 	if err != nil {
 		ctx.RespondText("Error: " + err.Error())
@@ -93,10 +85,6 @@ var dumpHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 }
 
 var dumpKeyHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	if ctx.Event.Author.ID != "583594630415777802" {
-		return
-	}
-
 	key := ctx.Arguments.Raw()
 
 	d, err := cache.FetchAllRecordsForKey(key)
@@ -116,19 +104,6 @@ var dumpKeyHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 		default:
 		}
 	}
-
-	// lines := make([]string, 0, 5)
-	// for _, str := range d {
-	// 	lines = append(lines, str)
-
-	// 	if len(lines) == 5 {
-	// 		ctx.RespondText(strings.Join(lines, "\n"))
-	// 		lines = lines[:0]
-	// 	}
-	// }
-	// ctx.RespondText(strings.Join(lines, "\n"))
-
-	// ctx.RespondText(key + " : " + d)
 }
 
 var dumpDingHandler dgc.ExecutionHandler = authorizedCommand(func(ctx *dgc.Ctx) {
@@ -154,9 +129,9 @@ var cancelHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 
 var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	var level string
-	var ok bool
+	var err error
 	if ctx.Arguments.Amount() > 0 {
-		_, err := ctx.Arguments.AsSingle().AsInt()
+		_, err = ctx.Arguments.AsSingle().AsInt()
 		if err != nil {
 			ctx.RespondText("How dare you?!? That's not a number! Are you _TRYING_ to crash me?!?")
 			return
@@ -165,19 +140,15 @@ var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	}
 
 	if level == "" {
-		level, ok = maxLevels.Get(ctx.Event.Author.ID, ctx.Event.GuildID)
-	}
-	if !ok {
-		ctx.RespondText("error")
-		return
+		level, err = maxLevels.Get(ctx.Event.Author.ID, ctx.Event.GuildID)
+		if err != nil {
+			log.Println("Error:", err.Error())
+			ctx.RespondText("error")
+			return
+		}
 	}
 
 	d := dings.Get(ctx.Event.Author.ID, ctx.Event.GuildID, level)
-	// _, err := ctx.Session.ChannelMessage(d.ChannelID, d.MessageID)
-	// if err != nil {
-	// 	ctx.RespondText("error")
-	// 	return
-	// }
 	reportAsEmbed(ctx, d)
 }
 

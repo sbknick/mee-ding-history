@@ -1,4 +1,4 @@
-package data
+package driver
 
 import (
 	"time"
@@ -6,10 +6,6 @@ import (
 	"github.com/sbknick/mee-ding-history/data/cache"
 	"github.com/sbknick/mee-ding-history/data/models"
 )
-
-var Driver driver
-
-type driver struct{}
 
 const (
 	_                      = iota
@@ -42,21 +38,21 @@ var (
 	driverCh chan driverMsg
 )
 
-func (driver) AddDing(ding *models.Ding) {
+func AddDing(ding *models.Ding) {
 	driverCh <- driverMsg{
 		msgType: dvAddDing,
 		ding:    ding,
 	}
 }
 
-func (driver) UpdateMaxLevel(maxLevel models.MaxLevel) {
+func UpdateMaxLevel(maxLevel models.MaxLevel) {
 	driverCh <- driverMsg{
 		msgType:  dvUpdateMaxLevel,
 		maxLevel: maxLevel,
 	}
 }
 
-func (driver) UpdateScanProgress(progress models.Progress, guildID, channelID string) {
+func UpdateScanProgress(progress models.Progress, guildID, channelID string) {
 	msg := driverMsg{
 		msgType: dvUpdateProgress,
 		progress: driverProgress{
@@ -65,20 +61,10 @@ func (driver) UpdateScanProgress(progress models.Progress, guildID, channelID st
 			channelID: channelID,
 		},
 	}
-
-	// for k, v := range progress {
-	// 	pg := driverProgress{
-	// 		Progress:  v,
-	// 		guildID:   guildID,
-	// 		channelID: k,
-	// 	}
-	// 	msg.progress = append(msg.progress, pg)
-	// }
-
 	driverCh <- msg
 }
 
-func (driver) init() {
+func Init() {
 	driverCh = make(chan driverMsg, 20)
 
 	go func() {
@@ -111,7 +97,7 @@ func (driver) init() {
 				case dvAddDing:
 					dings = append(dings, msg.ding)
 					if len(dings) == maxDings {
-						Driver.commit(dings, nil, nil, nil)
+						commit(dings, nil, nil, nil)
 						dings = dings[:0]
 					}
 
@@ -124,19 +110,19 @@ func (driver) init() {
 					// }
 
 				case dvFinish:
-					Driver.commit(dings, maxLevels, progress, msg.done)
+					commit(dings, maxLevels, progress, msg.done)
 					defer close(msg.done)
 				}
 
 			case <-commitTimer.C:
-				Driver.commit(dings, maxLevels, progress, nil)
+				commit(dings, maxLevels, progress, nil)
 				reset()
 			}
 		}
 	}()
 }
 
-func (driver) cancel() {
+func Cancel() {
 	done := make(chan struct{})
 	driverCh <- driverMsg{
 		msgType: dvFinish,
@@ -146,20 +132,17 @@ func (driver) cancel() {
 	<-done
 }
 
-func (driver) commit(dings []*models.Ding, maxLevels map[string]models.MaxLevel, progress models.ChannelProgress, done chan<- struct{}) {
+func commit(dings []*models.Ding, maxLevels map[string]models.MaxLevel, progress models.ChannelProgress, done chan<- struct{}) {
 	batch := cache.NewBatch()
 
 	// do the things
 	if len(dings) > 0 {
-		// cache.SaveDings(dings)
 		batch.SaveDings(dings)
 	}
 	if len(maxLevels) > 0 {
-		// cache.SaveMaxLevels(maxLevels)
 		batch.SaveMaxLevels(maxLevels)
 	}
 	if len(progress) > 0 {
-		// cache.SaveGuildScanProgress(progress)
 		batch.SaveGuildScanProgress(progress)
 	}
 

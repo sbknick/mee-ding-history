@@ -17,31 +17,11 @@ const searchPageSize = 100
 
 var (
 	dingMisses []string
-
-	// progress struct {
-	// 	done bool
-	// 	calc func() string
-	// }
-
-	taskQueue chan scanTask
+	taskQueue  chan scanTask
 )
 
 // FullScan initiates a full, deep scan of all guilds and all accessible text channels.
 func (bot *Bot) FullScan() error {
-
-	// afterId := "854040298463297546"
-	// channelId := "565222197199765504"
-	// // guildId := "565201829877514240"
-
-	// messages, err := bot.session.ChannelMessages(channelId, 5, "", afterId, "")
-	// if err != nil {
-	// 	return err
-	// }
-
-	// _ = messages
-
-	// return nil
-
 	if taskQueue != nil {
 		return fmt.Errorf("full Scan already in progress")
 	}
@@ -84,16 +64,8 @@ func scanGuildChannels(bot *Bot, guild *discordgo.UserGuild) error {
 	if !ok {
 		progress = services.ProgressByChannel{}
 	}
-	// if pr == nil {
-	// 	pr = &services.ProgressByChannel{}
-	// }
-	// progress := *pr
 
 	for _, channel := range channels {
-		if channel.ID != "565222197199765504" {
-			continue
-		}
-
 		if channel.Type != discordgo.ChannelTypeGuildText {
 			continue
 		}
@@ -117,33 +89,20 @@ func enqueueScanTasks(progress services.ProgressByChannel, channel *discordgo.Ch
 	pr, ok := progress[channel.ID]
 	if ok {
 		task.before = pr.Earliest
-		// task.progress.Earliest = pr.Earliest
 		taskQueue <- task
+
 		task.before = ""
 		task.after = pr.Latest
-		// task.progress.Earliest = ""
-		// task.progress.Latest = pr.Latest
 		taskQueue <- task
-		// task.before = pr.Latest
-		// taskQueue <- task
-		// task.before = ""
-		// task.after = pr.Earliest
-		// taskQueue <- task
 	} else {
 		taskQueue <- task
 	}
 }
 
-// func scanChannel(channel *discordgo.Channel, searchTerm string) {
-// 	taskQueue <- scanTask{channel: channel}
-// }
-
 type scanTask struct {
-	channel *discordgo.Channel
-	// before, after string
+	channel       *discordgo.Channel
 	before, after string
-	// progress      services.Progress
-	searchTerm string
+	searchTerm    string
 }
 
 func processHistory(bot *Bot) {
@@ -161,10 +120,6 @@ func processHistory(bot *Bot) {
 			messages, _ = bot.session.ChannelMessages(task.channel.ID, searchPageSize, "", task.after, "")
 			messages = reverse(messages)
 		}
-
-		// if !pastward {
-		// 	messages = reverse(messages)
-		// }
 
 		if len(messages) == 0 {
 			return
@@ -192,7 +147,7 @@ func processHistory(bot *Bot) {
 				}
 				if dingMsg.Author.ID != m.Mentions[0].ID {
 					dingMisses = append(dingMisses, fmt.Sprintf("%s: %s", dingMsg.Author.Username, level))
-					// fmt.Println("ding missed:", dingMsg.Author.Username, level)
+					fmt.Println("ding missed:", dingMsg.Author.Username, level)
 					// TODO:
 					// maybe ding miss, (deleted)
 					// maybe chat race
@@ -240,8 +195,6 @@ func processHistory(bot *Bot) {
 				task.after = messages[searchPageSize-2].ID
 			}
 			taskQueue <- task
-		} else {
-			// services.ScanProgress.Update(task.channel.GuildID, task.channel.ID, pastward, messages[0].ID, messages[len(messages)-1].ID, high.Content, low.Content)
 		}
 	}
 }

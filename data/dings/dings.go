@@ -1,8 +1,8 @@
 package dings
 
 import (
-	"github.com/sbknick/mee-ding-history/data"
 	"github.com/sbknick/mee-ding-history/data/cache"
+	"github.com/sbknick/mee-ding-history/data/driver"
 	"github.com/sbknick/mee-ding-history/data/models"
 )
 
@@ -29,7 +29,6 @@ func Get(userId string, guildId string, level string) *models.Ding {
 
 func Put(ding *models.Ding) error {
 	dingMap[ding.Key()] = ding
-	data.Driver.AddDing(ding)
+	driver.AddDing(ding)
 	return nil
-	// return cache.SaveDings([]*models.Ding{ding})
 }

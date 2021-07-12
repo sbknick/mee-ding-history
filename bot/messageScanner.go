@@ -22,12 +22,9 @@ func (b *Bot) filter(msg *discordgo.MessageCreate, term string) bool {
 
 func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageCreate) {
 	if msg.Author.Bot && msg.Author.ID == b.Mee6.ID {
-		// fmt.Println("from mee6")
-		fmt.Println("msg content:", msg.Message.Content)
+		// fmt.Println("msg content:", msg.Message.Content)
 		term := services.SearchTerm.GetSearchTerm(msg.GuildID)
-		// fmt.Println("term:", term)
 		if !b.filter(msg, term) {
-			fmt.Println("filter failed, not a ding?")
 			return
 		}
 
@@ -36,13 +33,11 @@ func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageC
 		user := msg.Mentions[0]
 		level := extractLevel(msg.Content)
 		dingMessage := b.firstBefore(msg.Message, user)
-		// log.Println("First before located.")
 		if dingMessage == nil {
 			fmt.Println("dingMessage is nil")
 			return
 		}
 
-		// services.Memory.Commit(ding)
 		dings.Put(&models.Ding{
 			UserID:    user.ID,
 			GuildID:   msg.GuildID,

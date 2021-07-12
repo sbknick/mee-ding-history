@@ -50,3 +50,7 @@ type Message struct {
 func ToKey(args ...string) string {
 	return strings.Join(args, ":")
 }
+
+func SplitKey(input string) []string {
+	return strings.Split(input, ":")
+}

@@ -1,20 +1,28 @@
 package maxLevels
 
 import (
+	"fmt"
 	"strconv"
 
-	"github.com/sbknick/mee-ding-history/data"
+	"github.com/sbknick/mee-ding-history/data/cache"
+	"github.com/sbknick/mee-ding-history/data/driver"
 	"github.com/sbknick/mee-ding-history/data/models"
+	"github.com/sbknick/mee-ding-history/services"
 )
 
-var maxLevelMap map[string]models.MaxLevel = make(map[string]models.MaxLevel)
+var maxLevelMap map[string]models.MaxLevel
 
-func Get(userId string, guildId string) (string, bool) {
+func Get(userId string, guildId string) (string, error) {
 	ml, ok := maxLevelMap[models.ToKey(guildId, userId)]
 	if ok {
-		return ml.Level, true
+		return ml.Level, nil
 	}
-	return "", false
+	username, ok := services.UserNames.Get(userId)
+	if !ok {
+		username = userId
+	}
+
+	return "", fmt.Errorf("max level for user(%s), guild(%s) not found", username, guildId)
 }
 
 func Update(userID string, guildId string, level string) {
@@ -30,11 +38,11 @@ func Update(userID string, guildId string, level string) {
 		n, _ := strconv.Atoi(maxLevel.Level)
 		if n > c {
 			maxLevelMap[key] = maxLevel
-			data.Driver.UpdateMaxLevel(maxLevel)
+			driver.UpdateMaxLevel(maxLevel)
 		}
 	} else {
 		maxLevelMap[key] = maxLevel
-		data.Driver.UpdateMaxLevel(maxLevel)
+		driver.UpdateMaxLevel(maxLevel)
 	}
 }
 
@@ -42,12 +50,12 @@ func All() map[string]models.MaxLevel {
 	return maxLevelMap
 }
 
-func hydrate() {
-	// x := redisClient.HGetAll(ctx, "maxlevels")
-	// l, err := x.Result()
-	// if err != nil {
-	// 	return // not available in redis
-	// }
-
-	// maxLevelMap = driver.heighten(l)
+func Hydrate() error {
+	if ml, err := cache.GetMaxLevels(); err != nil {
+		maxLevelMap = make(map[string]models.MaxLevel)
+		return fmt.Errorf("failed to fetch maxLevels from redis: %s", err.Error())
+	} else {
+		maxLevelMap = ml
+		return nil
+	}
 }
