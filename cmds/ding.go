@@ -157,6 +157,8 @@ var dingUserHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 }
 
 func reportAsEmbed(ctx *dgc.Ctx, d *models.Ding) {
+	verifyMessage(ctx, d)
+
 	desc, err := d.Message.ContentWithMoreMentionsReplaced(ctx.Session)
 	if err != nil {
 		log.Fatal(err)
@@ -194,4 +196,16 @@ func reportAsEmbed(ctx *dgc.Ctx, d *models.Ding) {
 func messageLink(d *models.Ding) string {
 	// `https://discord.com/channels/${this.guild ? this.guild.id : '@me'}/${this.channel.id}/${this.id}`
 	return fmt.Sprintf("https://discord.com/channels/%s/%s/%s", d.GuildID, d.ChannelID, d.MessageID)
+}
+
+func verifyMessage(ctx *dgc.Ctx, d *models.Ding) error {
+	if d.Message == nil {
+		m, err := ctx.Session.ChannelMessage(d.ChannelID, d.MessageID)
+		if err != nil {
+			return err
+		}
+
+		d.Message = m
+	}
+	return nil
 }
