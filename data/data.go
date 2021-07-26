@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/sbknick/mee-ding-history/data/cache"
+	"github.com/sbknick/mee-ding-history/data/db"
 	"github.com/sbknick/mee-ding-history/data/driver"
 	"github.com/sbknick/mee-ding-history/data/maxLevels"
 )
@@ -14,8 +15,9 @@ var (
 	cancelFn context.CancelFunc
 )
 
-func Init(redisUrl string) {
+func Init(redisUrl, dbConnStr string) {
 	ctx, cancelFn = context.WithCancel(context.Background())
+	db.Init(dbConnStr)
 	cache.Init(redisUrl, ctx)
 	driver.Init()
 

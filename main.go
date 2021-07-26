@@ -43,7 +43,7 @@ func main() {
 	}
 	dingBot, _ := bot.New(session)
 
-	data.Init(redisUrl)
+	data.Init(redisUrl, dbUrl)
 	services.Init()
 
 	/** **/

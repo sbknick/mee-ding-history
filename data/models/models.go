@@ -7,14 +7,14 @@ import (
 )
 
 type Ding struct {
-	UserID  string
-	GuildID string
-	Level   string
+	UserID  string `pg:",pk"`
+	GuildID string `pg:",pk"`
+	Level   string `pg:",pk"`
 
 	MessageID string
 	ChannelID string
 
-	Message *discordgo.Message `json:"-"`
+	Message *discordgo.Message `json:"-" sql:"-" pg:"-"`
 }
 
 func (ding Ding) Key() string {

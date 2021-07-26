@@ -1,9 +1,11 @@
 package dings
 
 import (
+	"log"
 	"time"
 
 	"github.com/sbknick/mee-ding-history/data/cache"
+	"github.com/sbknick/mee-ding-history/data/db"
 	"github.com/sbknick/mee-ding-history/data/driver"
 	"github.com/sbknick/mee-ding-history/data/models"
 )
@@ -46,11 +48,25 @@ func Get(userId string, guildId string, level string) *models.Ding {
 		return d
 	}
 
-	return nil
+	var err error
+	d, err = db.GetDing(guildId, userId, level)
+	if err != nil {
+		log.Printf("Error: " + err.Error())
+		return nil
+	}
+	err = Put(d)
+	if err != nil {
+		log.Printf("Error: " + err.Error())
+		return nil
+	}
+	dingMap[d.Key()] = d
+	driver.AddDing(d)
+	return d
 }
 
 func Put(ding *models.Ding) error {
 	dingMap[ding.Key()] = ding
 	driver.AddDing(ding)
-	return nil
+	err := db.PutDing(ding)
+	return err
 }
