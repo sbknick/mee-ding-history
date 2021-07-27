@@ -54,11 +54,6 @@ func Get(userId string, guildId string, level string) *models.Ding {
 		log.Printf("Error: " + err.Error())
 		return nil
 	}
-	err = Put(d)
-	if err != nil {
-		log.Printf("Error: " + err.Error())
-		return nil
-	}
 	dingMap[d.Key()] = d
 	driver.AddDing(d)
 	return d

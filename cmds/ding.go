@@ -11,6 +11,7 @@ import (
 	"github.com/sbknick/mee-ding-history/data/dings"
 	"github.com/sbknick/mee-ding-history/data/maxLevels"
 	"github.com/sbknick/mee-ding-history/data/models"
+	"github.com/sbknick/mee-ding-history/services"
 )
 
 var cancelled chan struct{}
@@ -39,12 +40,12 @@ func Ding() *dgc.Command {
 			{
 				Name:       "Flush",
 				IgnoreCase: true,
-				Handler:    authorizedCommand(flushHandler),
+				Handler:    flushHandler,
 			},
 			{
 				Name:       "Dump",
 				IgnoreCase: true,
-				Handler:    authorizedCommand(dumpHandler),
+				Handler:    dumpHandler,
 				SubCommands: []*dgc.Command{
 					{
 						Name:       "Key",
@@ -62,6 +63,10 @@ func Ding() *dgc.Command {
 	}
 }
 
+var defaultHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
+	ctx.RespondText("Dong!")
+}
+
 var termHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	// if ctx.Arguments.Amount() == 0 {
 	// 	ctx.RespondText(fmt.Sprintf("My current search term is \"%s\"", "unknown"))
@@ -70,56 +75,6 @@ var termHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	// }
 }
 
-var flushHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	cache.Flush()
-	ctx.RespondText("OK")
-}
-
-var dumpHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	d, err := cache.Dump()
-	if err != nil {
-		ctx.RespondText("Error: " + err.Error())
-	} else {
-		ctx.RespondText("Dump: " + d)
-	}
-}
-
-var dumpKeyHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	key := ctx.Arguments.Raw()
-
-	d, err := cache.FetchAllRecordsForKey(key)
-	if err != nil {
-		ctx.RespondText("Error: " + err.Error())
-		return
-	}
-	if cancelled == nil {
-		cancelled = make(chan struct{})
-	}
-	for _, str := range d {
-		ctx.RespondText(str)
-		select {
-		case <-cancelled:
-			cancelled = nil // naive, can cause panics if there's multiple cancellable processes running in parallel
-			return
-		default:
-		}
-	}
-}
-
-var dumpDingHandler dgc.ExecutionHandler = authorizedCommand(func(ctx *dgc.Ctx) {
-	guildId := ctx.Arguments.Get(0).Raw()
-	userId := ctx.Arguments.Get(1).Raw()
-	level := ctx.Arguments.Get(2).Raw()
-
-	d, ok := cache.GetDing(guildId, userId, level)
-	if !ok {
-		ctx.RespondText("Error: No ding in memory")
-		return
-	}
-
-	ctx.RespondText(fmt.Sprintf("%v", d))
-})
-
 var cancelHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	ctx.RespondText("You have been cancelled.")
 	if cancelled != nil {
@@ -127,33 +82,46 @@ var cancelHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 	}
 }
 
+var dingUserHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
+	if ctx.Arguments.Amount() == 0 {
+		defaultHandler(ctx)
+		return
+	}
+	mentionId := ctx.Arguments.Get(0).AsUserMentionID()
+	if mentionId == "" {
+		defaultHandler(ctx)
+		return
+	}
+	dingHandlerInternal(ctx, 1, mentionId)
+}
+
 var dingMeHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	var level string
+	dingHandlerInternal(ctx, 0, ctx.Event.Author.ID)
+}
+
+func dingHandlerInternal(ctx *dgc.Ctx, argPos int, mentionId string) {
+	level := ""
 	var err error
-	if ctx.Arguments.Amount() > 0 {
-		_, err = ctx.Arguments.AsSingle().AsInt()
+	if ctx.Arguments.Amount() > argPos {
+		_, err = ctx.Arguments.Get(argPos).AsInt()
 		if err != nil {
 			ctx.RespondText("How dare you?!? That's not a number! Are you _TRYING_ to crash me?!?")
 			return
 		}
-		level = ctx.Arguments.AsSingle().Raw()
+		level = ctx.Arguments.Get(argPos).Raw()
 	}
 
 	if level == "" {
-		level, err = maxLevels.Get(ctx.Event.Author.ID, ctx.Event.GuildID)
+		level, err = maxLevels.Get(mentionId, ctx.Event.GuildID)
 		if err != nil {
 			log.Println("Error:", err.Error())
-			ctx.RespondText("error")
+			ctx.RespondText(services.ErrorGeneric())
 			return
 		}
 	}
 
-	d := dings.Get(ctx.Event.Author.ID, ctx.Event.GuildID, level)
+	d := dings.Get(mentionId, ctx.Event.GuildID, level)
 	reportAsEmbed(ctx, d)
-}
-
-var dingUserHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
-	ctx.RespondText("Dong!")
 }
 
 func reportAsEmbed(ctx *dgc.Ctx, d *models.Ding) {
@@ -209,3 +177,55 @@ func verifyMessage(ctx *dgc.Ctx, d *models.Ding) error {
 	}
 	return nil
 }
+
+/** Dev Commands **/
+
+var flushHandler dgc.ExecutionHandler = authorizedCommand(func(ctx *dgc.Ctx) {
+	cache.Flush()
+	ctx.RespondText("OK")
+})
+
+var dumpHandler dgc.ExecutionHandler = authorizedCommand(func(ctx *dgc.Ctx) {
+	d, err := cache.Dump()
+	if err != nil {
+		ctx.RespondText("Error: " + err.Error())
+	} else {
+		ctx.RespondText("Dump: " + d)
+	}
+})
+
+var dumpKeyHandler dgc.ExecutionHandler = authorizedCommand(func(ctx *dgc.Ctx) {
+	key := ctx.Arguments.Raw()
+
+	d, err := cache.FetchAllRecordsForKey(key)
+	if err != nil {
+		ctx.RespondText("Error: " + err.Error())
+		return
+	}
+	if cancelled == nil {
+		cancelled = make(chan struct{})
+	}
+	for _, str := range d {
+		ctx.RespondText(str)
+		select {
+		case <-cancelled:
+			cancelled = nil // naive, can cause panics if there's multiple cancellable processes running in parallel
+			return
+		default:
+		}
+	}
+})
+
+var dumpDingHandler dgc.ExecutionHandler = authorizedCommand(func(ctx *dgc.Ctx) {
+	guildId := ctx.Arguments.Get(0).Raw()
+	userId := ctx.Arguments.Get(1).Raw()
+	level := ctx.Arguments.Get(2).Raw()
+
+	d, ok := cache.GetDing(guildId, userId, level)
+	if !ok {
+		ctx.RespondText("Error: No ding in memory")
+		return
+	}
+
+	ctx.RespondText(fmt.Sprintf("%v", d))
+})
