@@ -17,7 +17,7 @@ func Get(userId string, guildId string) (string, error) {
 	if ok {
 		return ml.Level, nil
 	}
-	username, ok := services.UserNames.Get(userId)
+	username, ok := services.UserNames.Get(guildId, userId)
 	if !ok {
 		username = userId
 	}

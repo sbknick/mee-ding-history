@@ -40,7 +40,7 @@ var levelsHandler dgc.ExecutionHandler = func(ctx *dgc.Ctx) {
 
 	n := 0
 	for _, l := range levels {
-		userName, _ := services.UserNames.Get(l.UserID)
+		userName, _ := services.UserNames.Get(l.GuildID, l.UserID)
 
 		g, ok := guilds[l.GuildID]
 		if !ok {

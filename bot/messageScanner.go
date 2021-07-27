@@ -48,14 +48,14 @@ func (b *Bot) MessageScanner(session *discordgo.Session, msg *discordgo.MessageC
 		maxLevels.Update(user.ID, msg.GuildID, level)
 
 		userName := ""
-		if _, ok := services.UserNames.Get(user.ID); !ok {
+		if _, ok := services.UserNames.Get(msg.GuildID, user.ID); !ok {
 			if dingMessage.Member != nil {
 				userName = dingMessage.Member.Nick
 			}
 			if userName == "" {
 				userName = dingMessage.Author.Username
 			}
-			services.UserNames.Set(user.ID, userName)
+			services.UserNames.Set(msg.GuildID, user.ID, userName)
 		}
 
 		log.Println("User:", userName, "Level:", level, "Msg:", dingMessage.Content)

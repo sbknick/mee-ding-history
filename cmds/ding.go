@@ -125,7 +125,11 @@ func dingHandlerInternal(ctx *dgc.Ctx, argPos int, mentionId string) {
 }
 
 func reportAsEmbed(ctx *dgc.Ctx, d *models.Ding) {
-	verifyMessage(ctx, d)
+	if err := verifyMessage(ctx, d); err != nil {
+		ctx.RespondText(services.ErrorGeneric())
+		log.Println("Error: ", err.Error())
+		return
+	}
 
 	desc, err := d.Message.ContentWithMoreMentionsReplaced(ctx.Session)
 	if err != nil {
@@ -144,12 +148,11 @@ func reportAsEmbed(ctx *dgc.Ctx, d *models.Ding) {
 		Timestamp: string(d.Message.Timestamp),
 		Footer:    &discordgo.MessageEmbedFooter{Text: "Brought to you by Blair"},
 	}
+
+	name, _ := services.UserNames.Get(d.GuildID, d.UserID)
 	emb.Author = &discordgo.MessageEmbedAuthor{
-		Name:    ctx.Event.Member.Nick,
+		Name:    name,
 		IconURL: ctx.Event.Author.AvatarURL(""),
-	}
-	if emb.Author.Name == "" {
-		emb.Author.Name = ctx.Event.Author.Username
 	}
 	if len(d.Message.Attachments) > 0 {
 		emb.Image = &discordgo.MessageEmbedImage{URL: d.Message.Attachments[0].URL}
@@ -171,6 +174,21 @@ func verifyMessage(ctx *dgc.Ctx, d *models.Ding) error {
 		m, err := ctx.Session.ChannelMessage(d.ChannelID, d.MessageID)
 		if err != nil {
 			return err
+		}
+
+		_, ok := services.UserNames.Get(d.GuildID, d.UserID)
+		if !ok {
+			mem, err := ctx.Session.GuildMember(d.GuildID, d.UserID)
+			if err != nil {
+				return err
+			}
+
+			username := mem.Nick
+			if username == "" {
+				username = mem.User.Username
+			}
+
+			services.UserNames.Set(d.GuildID, d.UserID, username)
 		}
 
 		d.Message = m

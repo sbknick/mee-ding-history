@@ -165,7 +165,7 @@ func processHistory(bot *Bot) {
 				}
 				dings.Put(d)
 
-				if _, ok := services.UserNames.Get(d.UserID); !ok {
+				if _, ok := services.UserNames.Get(d.GuildID, d.UserID); !ok {
 					var userName string
 					if dingMsg.Member != nil {
 						userName = dingMsg.Member.Nick
@@ -173,7 +173,7 @@ func processHistory(bot *Bot) {
 					if userName == "" {
 						userName = dingMsg.Author.Username
 					}
-					services.UserNames.Set(d.UserID, userName)
+					services.UserNames.Set(d.GuildID, d.UserID, userName)
 				}
 
 				// fmt.Println("Cached level", level, "ding for", dingMsg.Author.Username)
